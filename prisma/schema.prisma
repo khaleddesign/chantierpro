@@ -1,0 +1,1912 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  nom           String?
+  name          String?
+  email         String    @unique
+  password      String?
+  image         String?
+  role          Role      @default(CLIENT)
+  phone         String?
+  company       String?
+  address       String?
+  
+  // PHASE 1 - CHAMPS CRM ÉTENDUS
+  telephoneFixe     String?
+  telephoneMobile   String?
+  siteWeb          String?
+  linkedin         String?
+  
+  // Informations légales/administratives  
+  siret            String?
+  codeApe          String?
+  formeJuridique   String?
+  capitalSocial    Float?
+  
+  // CRM commercial
+  sourceProspect   String?   // Comment le prospect a été acquis
+  notesCRM         String?   // Notes commerciales libres
+  priorite         Int       @default(3) // 1=Haute, 2=Moyenne, 3=Basse
+  score            Int       @default(0) // Score de qualification
+  
+  // Préférences communication
+  prefEmail        Boolean   @default(true)
+  prefTelephone    Boolean   @default(true)
+  prefSMS          Boolean   @default(false)
+  prefCourrier     Boolean   @default(false)
+  prefAppel        Boolean   @default(true)  // Conservé pour compatibilité
+  
+  // CHAMPS CRM BTP EXISTANTS
+  typeClient         TypeClient? @default(PARTICULIER)
+  secteurActivite    String?
+  effectif           String?
+  chiffreAffaires    Float?
+  adresse2           String?
+  codePostal         String?
+  ville              String?
+  pays               String? @default("France")
+  sourceProspection  String?
+  
+  // SÉCURITÉ 2FA
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean @default(false)
+  backupCodes        String?
+  
+  // Relations commerciales
+  commercial         User? @relation("Commercial", fields: [commercialId], references: [id])
+  commercialId       String?
+  commerciaux        User[] @relation("Commercial")
+  
+  // Relations existantes
+  accounts      Account[]
+  sessions      Session[]
+  mobileSessions MobileSession[]
+  pushSubscriptions PushSubscription[]
+  chantiers     Chantier[] @relation("ChantierClient")
+  assignedChantiers Chantier[] @relation("ChantierAssignee")
+  deletedChantiers  Chantier[] @relation("ChantierDeletedBy")
+  messages      Message[]
+  comments      Comment[]
+  timelineEvents TimelineEvent[]
+  devis         Devis[] @relation("DevisClient")
+  planningsOrganisateur Planning[] @relation("PlanningOrganisateur")
+  planningsParticipant Planning[] @relation("PlanningParticipants")
+  notifications Notification[]
+  documents     Document[] @relation("DocumentUploader")
+  etapesCreated EtapeChantier[]
+  
+  // NOUVELLES RELATIONS CRM
+  interactions       InteractionClient[] @relation("ClientInteractions")
+  opportunites       Opportunite[] @relation("ClientOpportunites")
+  workflowsCreated   WorkflowRule[] @relation("WorkflowCreator")
+  communications     CommunicationClient[] @relation("ClientCommunications")
+  communicationsCreated CommunicationClient[] @relation("CreatorCommunications")
+  templatesCreated   TemplateCommunication[] @relation("TemplateCreator")
+  securityLogs       SecurityLog[]
+  performanceMetrics PerformanceMetric[]
+  integrationLogs    IntegrationLog[]
+  biReports          BIReport[] @relation("BIReportCreator")
+  biAlerts           BIAlert[] @relation("BIAlertCreator")  
+  biDashboards       BIDashboard[] @relation("BIDashboardCreator")
+  biDashboardViews   BIDashboardView[] @relation("BIDashboardViewer")
+  
+  // RELATION PROJETS BTP
+  projets           Projet[] @relation("ProjetClient")
+  assignationsTaches AssignationTache[]
+  
+  // RELATIONS RGPD
+  gdprConsents      GDPRConsent[] @relation("GDPRConsents")
+  dataRightsRequests DataRightsRequest[] @relation("DataRightsRequests")
+  processedDataRights DataRightsRequest[] @relation("ProcessedDataRights")
+  processingLogs    GDPRProcessingLog[] @relation("ProcessingLogs")
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Index pour les performances
+  @@index([email])
+  @@index([role])
+  @@index([commercialId])
+  @@index([createdAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MobileSession {
+  id             String   @id @default(cuid())
+  userId         String
+  deviceId       String
+  devicePlatform String
+  deviceVersion  String
+  userAgent      String
+  lastActivity   DateTime @updatedAt
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@index([deviceId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String
+  p256dh    String
+  auth      String
+  deviceId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, endpoint])
+  @@index([userId])
+}
+
+model Chantier {
+  id          String        @id @default(cuid())
+  nom         String
+  description String
+  adresse     String
+  client      User          @relation("ChantierClient", fields: [clientId], references: [id])
+  clientId    String
+  statut      ChantierStatus @default(PLANIFIE)
+  progression Int           @default(0)
+  dateDebut   DateTime
+  dateFin     DateTime
+  budget      Float
+  superficie  String
+  photo       String?
+  photos      String?
+  lat         Float?
+  lng         Float?
+  
+  assignees   User[]        @relation("ChantierAssignee")
+  timeline    TimelineEvent[]
+  comments    Comment[]
+  messages    Message[]
+  devis       Devis[]
+  plannings   Planning[] @relation("PlanningChantier")
+  documents   Document[] @relation("DocumentChantier")
+  etapes      EtapeChantier[]
+  
+  // Soft delete
+  deletedAt   DateTime?
+  deletedBy   User? @relation("ChantierDeletedBy", fields: [deletedById], references: [id])
+  deletedById String?
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Index pour les performances
+  @@index([clientId])
+  @@index([statut])
+  @@index([dateDebut])
+  @@index([createdAt])
+  @@index([clientId, statut])
+  @@index([deletedAt])
+}
+
+model TimelineEvent {
+  id          String            @id @default(cuid())
+  chantier    Chantier          @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  chantierId  String
+  titre       String
+  description String
+  date        DateTime
+  type        TimelineEventType
+  createdBy   User              @relation(fields: [createdById], references: [id])
+  createdById String
+  
+  createdAt   DateTime          @default(now())
+  
+  // Index pour les performances
+  @@index([chantierId])
+  @@index([createdById])
+  @@index([date])
+  @@index([type])
+  @@index([createdAt])
+  @@index([chantierId, date])
+}
+
+model Comment {
+  id         String      @id @default(cuid())
+  chantier   Chantier    @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  chantierId String
+  auteur     User        @relation(fields: [auteurId], references: [id])
+  auteurId   String
+  message    String
+  photos     String?
+  reactions  Json        @default("[]")
+  
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  
+  // Index pour les performances
+  @@index([chantierId])
+  @@index([auteurId])
+  @@index([createdAt])
+  @@index([chantierId, createdAt])
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  expediteur     User        @relation(fields: [expediteurId], references: [id])
+  expediteurId   String
+  destinataireId String?
+  chantier       Chantier?   @relation(fields: [chantierId], references: [id])
+  chantierId     String?
+  message        String
+  photos         String?
+  typeMessage    MessageType @default(DIRECT)
+  lu             Boolean     @default(false)
+  reactions      Json        @default("[]")
+  threadId       String?
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  
+  // Index pour les performances
+  @@index([expediteurId])
+  @@index([destinataireId])
+  @@index([chantierId])
+  @@index([createdAt])
+  @@index([lu])
+  @@index([threadId])
+}
+
+model Devis {
+  id              String        @id @default(cuid())
+  numero          String        @unique
+  chantier        Chantier?     @relation(fields: [chantierId], references: [id])
+  chantierId      String?
+  client          User          @relation("DevisClient", fields: [clientId], references: [id])
+  clientId        String
+  type            DevisType
+  objet           String?
+  montant         Float
+  totalHT         Float?
+  totalTVA        Float?
+  totalTTC        Float?
+  tva             Float         @default(20.0)
+  statut          DevisStatus   @default(BROUILLON)
+  dateCreation    DateTime      @default(now())
+  dateEcheance    DateTime
+  
+  // AJOUTS BTP - SITUATIONS DE TRAVAUX
+  situationNumero    Int?
+  situationParent    String?
+  avancement         Float  @default(0)
+  
+  // AJOUTS BTP - RETENUE DE GARANTIE
+  retenueGarantie    Float?
+  cautionBancaire    Boolean @default(false)
+  dateLiberation     DateTime?
+  
+  // AJOUTS BTP - TVA MULTI-TAUX
+  tva55              Float?
+  tva10              Float?
+  tva20              Float?
+  
+  // AJOUTS BTP - AUTOLIQUIDATION
+  autoliquidation    Boolean @default(false)
+  mentionAutoliq     String?
+  
+  // AJOUTS BTP - SIGNATURES & SUIVI
+  consulteLe         DateTime?
+  signatureLien      String?
+  dateSignature      DateTime?
+  
+  lignes          Json          @default("[]")
+  ligneDevis      LigneDevis[]
+  ligneDevisDetails LigneDevisDetail[]
+  paiements       Paiement[]    @relation("FacturePaiements")
+  relances        Relance[]     @relation("FactureRelances")
+  notes           String?
+  conditionsVente String?
+  factureId       String?
+  modalitesPaiement String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  // Index pour les performances
+  @@index([clientId])
+  @@index([chantierId])
+  @@index([statut])
+  @@index([dateCreation])
+  @@index([dateEcheance])
+  @@index([numero])
+  @@index([type])
+  @@index([clientId, statut])
+}
+
+model LigneDevis {
+  id          String  @id @default(cuid())
+  devis       Devis   @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  devisId     String
+  description String
+  quantite    Float
+  prixUnit    Float
+  total       Float
+  ordre       Int     @default(0)
+  
+  // Relation vers détail BTP
+  details     LigneDevisDetail[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// NOUVEAU MODÈLE BTP - DÉTAIL PAR LIGNE
+model LigneDevisDetail {
+  id          String @id @default(cuid())
+  ligneDevis  LigneDevis @relation(fields: [ligneId], references: [id], onDelete: Cascade)
+  ligneId     String
+  devis       Devis @relation(fields: [devisId], references: [id], onDelete: Cascade)
+  devisId     String
+  tauxTVA     Float @default(20.0)
+  categorie   String?
+  unite       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Paiement {
+  id          String   @id @default(cuid())
+  facture     Devis    @relation("FacturePaiements", fields: [factureId], references: [id], onDelete: Cascade)
+  factureId   String
+  montant     Float
+  datePaiement DateTime
+  methode     String
+  reference   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Relance {
+  id          String   @id @default(cuid())
+  facture     Devis    @relation("FactureRelances", fields: [factureId], references: [id], onDelete: Cascade)
+  factureId   String
+  dateRelance DateTime
+  type        String   @default("EMAIL")
+  message     String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Planning {
+  id            String         @id @default(cuid())
+  titre         String
+  description   String?
+  type          PlanningType   @default(REUNION)
+  dateDebut     DateTime
+  dateFin       DateTime
+  recurrence    String?
+  
+  chantier      Chantier?      @relation("PlanningChantier", fields: [chantierId], references: [id])
+  chantierId    String?
+  organisateur  User           @relation("PlanningOrganisateur", fields: [organisateurId], references: [id])
+  organisateurId String
+  participants  User[]         @relation("PlanningParticipants")
+  
+  statut        PlanningStatus @default(PLANIFIE)
+  notes         String?
+  lieu          String?
+  
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Index pour les performances
+  @@index([chantierId])
+  @@index([organisateurId])
+  @@index([dateDebut])
+  @@index([dateFin])
+  @@index([type])
+  @@index([statut])
+  @@index([dateDebut, dateFin])
+}
+
+model Document {
+  id            String       @id @default(cuid())
+  nom           String
+  nomOriginal   String
+  type          TypeDocument
+  taille        Int
+  url           String
+  urlThumbnail  String?
+  
+  chantier      Chantier?    @relation("DocumentChantier", fields: [chantierId], references: [id])
+  chantierId    String?
+  uploader      User         @relation("DocumentUploader", fields: [uploaderId], references: [id])
+  uploaderId    String
+  
+  metadonnees   Json?
+  tags          String?
+  dossier       String?
+  public        Boolean      @default(false)
+  lienPartage   String?      @unique
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  
+  // Index pour les performances
+  @@index([chantierId])
+  @@index([uploaderId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([public])
+  @@index([dossier])
+  @@index([chantierId, type])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  titre     String
+  message   String
+  type      NotificationType @default(INFO)
+  lu        Boolean          @default(false)
+  lien      String?
+  
+  createdAt DateTime         @default(now())
+  
+  // Index pour les performances
+  @@index([userId])
+  @@index([lu])
+  @@index([type])
+  @@index([createdAt])
+  @@index([userId, lu])
+}
+
+model EtapeChantier {
+  id          String      @id @default(cuid())
+  titre       String
+  description String?
+  dateDebut   DateTime
+  dateFin     DateTime
+  statut      EtapeStatus @default(A_FAIRE)
+  ordre       Int         @default(0)
+  
+  chantier    Chantier    @relation(fields: [chantierId], references: [id], onDelete: Cascade)
+  chantierId  String
+  createdBy   User        @relation(fields: [createdById], references: [id])
+  createdById String
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+// NOUVEAU MODÈLE BTP - BIBLIOTHÈQUE PRIX
+model BibliothequePrix {
+  id           String @id @default(cuid())
+  code         String @unique
+  designation  String
+  unite        String
+  prixHT       Float
+  corpsEtat    String
+  region       String @default("France")
+  dateMAJ      DateTime @default(now())
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// NOUVEAUX MODÈLES PLANNING GANTT
+model Projet {
+  id          String @id @default(cuid())
+  nom         String
+  description String?
+  statut      StatutProjet @default(PLANIFICATION)
+  dateDebut   DateTime?
+  dateFin     DateTime?
+  budget      Float?
+  
+  client      User @relation("ProjetClient", fields: [clientId], references: [id])
+  clientId    String
+  
+  taches      TacheProjet[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TacheProjet {
+  id          String @id @default(cuid())
+  nom         String
+  description String?
+  dateDebut   DateTime
+  dateFin     DateTime
+  dureeJours  Int
+  statut      StatutTache @default(EN_ATTENTE)
+  priorite    PrioriteTache @default(MOYENNE)
+  avancement  Int @default(0)
+  corpsEtat   String
+  dependances Json?
+  
+  projet      Projet @relation(fields: [projetId], references: [id], onDelete: Cascade)
+  projetId    String
+  
+  assignations AssignationTache[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AssignationTache {
+  id        String @id @default(cuid())
+  tache     TacheProjet @relation(fields: [tacheId], references: [id], onDelete: Cascade)
+  tacheId   String
+  user      User @relation(fields: [userId], references: [id])
+  userId    String
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([tacheId, userId])
+}
+
+// EXTENSION CRM - INTERACTIONS CLIENT (PHASE 1)
+model InteractionClient {
+  id           String @id @default(cuid())
+  client       User @relation("ClientInteractions", fields: [clientId], references: [id], onDelete: Cascade)
+  clientId     String
+  type         TypeInteraction
+  titre        String // Renommé de 'objet' pour plus de clarté
+  description  String
+  dateContact  DateTime @default(now())
+  prochaineSuite DateTime?
+  createdBy    String
+  createdByName String? // Nom de l'utilisateur pour l'historique
+  
+  // PHASE 1 - AMÉLIORATIONS
+  dureeMinutes  Int?
+  resultats     String?
+  pieceJointe   String?
+  localisation  String?
+  rappelDate    DateTime?
+  statut        StatutInteraction @default(A_TRAITER)
+  
+  // LIENS AVEC LES MODULES EXISTANTS
+  chantierId   String?   // Lien avec un chantier spécifique
+  devisId      String?   // Lien avec un devis
+  opportuniteId String?  // Lien avec une opportunité
+  
+  // MÉTADONNÉES
+  tags         String?   // Tags libres séparés par des virgules
+  importance   Int       @default(3) // 1=Haute, 2=Moyenne, 3=Basse
+  satisfaction String?   // Niveau de satisfaction client
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // INDEX POUR PERFORMANCE
+  @@index([clientId])
+  @@index([type])
+  @@index([dateContact])
+  @@index([statut])
+  @@index([createdBy])
+  @@index([chantierId])
+  @@index([opportuniteId])
+}
+
+// EXTENSION CRM - OPPORTUNITÉS (PHASE 1)
+model Opportunite {
+  id           String @id @default(cuid())
+  client       User @relation("ClientOpportunites", fields: [clientId], references: [id], onDelete: Cascade)
+  clientId     String
+  titre        String // Renommé de 'nom' pour cohérence
+  description  String
+  valeurEstimee Float
+  probabilite  Int @default(50)
+  statut       StatutOpportunite @default(PROSPECT)
+  dateCloture  DateTime?
+  dateCloturePrevisionnelle DateTime? // Nouvelle: prévision de clôture
+  
+  // PHASE 1 - INFORMATIONS BTP ÉTENDUES
+  sourceProspection String?
+  concurrents      String?
+  motifRefus       String?
+  commissionAgent  Float?
+  dateProchainSuivi DateTime?
+  priorite         PrioriteOpportunite @default(NORMALE)
+  tagsMetier       String?
+  
+  // PHASE 1 - SUIVI COMMERCIAL
+  assigneACommercial String? // ID du commercial responsable
+  etapeActuelle    String?  // Étape actuelle du processus
+  tempsEstime      Int?     // Temps estimé en jours
+  budgetClient     Float?   // Budget mentionné par le client
+  delaiSouhaite    String?  // Délai souhaité par le client
+  typeProjet       String?  // Type de projet BTP
+  
+  // PHASE 1 - LIAISONS INTELLIGENTES
+  devisAssocie     String?  // ID du devis lié
+  chantierId       String?  // ID du chantier si opportunité gagnée
+  
+  // RELATIONS ÉTENDUES
+  relances         RelanceCommerciale[]
+  taches           TacheCommerciale[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // INDEX POUR PERFORMANCE
+  @@index([clientId])
+  @@index([statut])
+  @@index([assigneACommercial])
+  @@index([dateCloture])
+  @@index([priorite])
+  @@index([sourceProspection])
+  @@index([chantierId])
+}
+
+// NOUVEAU MODÈLE CRM - RELANCES COMMERCIALES
+model RelanceCommerciale {
+  id           String @id @default(cuid())
+  opportunite  Opportunite @relation(fields: [opportuniteId], references: [id], onDelete: Cascade)
+  opportuniteId String
+  
+  type         TypeRelance @default(EMAIL)
+  dateRelance  DateTime @default(now())
+  dateProchaine DateTime?
+  objet        String
+  message      String
+  
+  envoye       Boolean @default(false)
+  lu           Boolean @default(false)
+  repondu      Boolean @default(false)
+  
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// NOUVEAU MODÈLE CRM - TÂCHES COMMERCIALES
+model TacheCommerciale {
+  id           String @id @default(cuid())
+  opportunite  Opportunite? @relation(fields: [opportuniteId], references: [id], onDelete: Cascade)
+  opportuniteId String?
+  
+  titre        String
+  description  String?
+  dateEcheance DateTime
+  priorite     PrioriteTacheCommerciale @default(NORMALE)
+  statut       StatutTacheCommerciale @default(A_FAIRE)
+  
+  assigneTo    String
+  temps_estime Int? // en minutes
+  temps_passe  Int? // en minutes
+  
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// NOUVEAU MODÈLE CRM - SOURCES DE PROSPECTS
+model SourceProspect {
+  id           String @id @default(cuid())
+  nom          String @unique
+  description  String?
+  couleur      String @default("#3b82f6")
+  actif        Boolean @default(true)
+  
+  // MÉTRIQUES
+  nbProspects  Int @default(0)
+  tauxConversion Float @default(0)
+  coutProspect Float?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// NOUVEAU MODÈLE CRM - TEMPLATES EMAIL
+model TemplateEmail {
+  id           String @id @default(cuid())
+  nom          String
+  objet        String
+  contenu      String
+  type         TypeTemplate @default(RELANCE)
+  
+  variables    Json? // Variables dynamiques
+  actif        Boolean @default(true)
+  
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// NOUVEAU MODÈLE CRM - ALERTES ET RAPPELS
+model AlerteCRM {
+  id           String @id @default(cuid())
+  titre        String
+  message      String
+  type         TypeAlerte @default(RAPPEL)
+  
+  clientId     String?
+  opportuniteId String?
+  userId       String
+  
+  dateAlerte   DateTime
+  traite       Boolean @default(false)
+  
+  // RÉCURRENCE
+  recurrence   RecurrenceAlerte?
+  prochaine    DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// NOUVEAU MODÈLE CRM - HISTORIQUE ACTIONS
+model HistoriqueActionCRM {
+  id           String @id @default(cuid())
+  action       String
+  entite       String // "client", "opportunite", "interaction"
+  entiteId     String
+  
+  ancienneValeur Json?
+  nouvelleValeur Json?
+  
+  userId       String
+  userName     String
+  
+  createdAt    DateTime @default(now())
+}
+
+// ENUMS
+enum Role {
+  ADMIN
+  COMMERCIAL
+  OUVRIER
+  CLIENT
+}
+
+enum ChantierStatus {
+  PLANIFIE
+  EN_COURS
+  EN_ATTENTE
+  TERMINE
+  ANNULE
+}
+
+enum TimelineEventType {
+  DEBUT
+  ETAPE
+  PROBLEME
+  FIN
+  ATTENTE
+}
+
+enum MessageType {
+  DIRECT
+  CHANTIER
+  GROUPE
+}
+
+enum DevisType {
+  DEVIS
+  FACTURE
+}
+
+enum DevisStatus {
+  BROUILLON
+  ENVOYE
+  ACCEPTE
+  REFUSE
+  PAYE
+  ANNULE
+}
+
+enum PlanningType {
+  REUNION
+  LIVRAISON
+  INSPECTION
+  AUTRE
+}
+
+enum PlanningStatus {
+  PLANIFIE
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+enum TypeDocument {
+  PHOTO
+  PDF
+  PLAN
+  FACTURE
+  CONTRAT
+  AUTRE
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum EtapeStatus {
+  A_FAIRE
+  EN_COURS
+  TERMINE
+}
+
+// NOUVEAUX ENUMS BTP
+enum TypeClient {
+  PARTICULIER
+  PROFESSIONNEL
+  SYNDIC
+  PROMOTEUR
+}
+
+enum TypeInteraction {
+  APPEL
+  EMAIL
+  VISITE
+  REUNION
+  AUTRE
+}
+
+enum StatutOpportunite {
+  PROSPECT
+  QUALIFIE
+  PROPOSITION
+  NEGOCIATION
+  GAGNE
+  PERDU
+}
+
+enum StatutProjet {
+  PLANIFICATION
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+enum StatutTache {
+  EN_ATTENTE
+  EN_COURS
+  TERMINE
+  SUSPENDU
+}
+
+enum PrioriteTache {
+  BASSE
+  MOYENNE
+  HAUTE
+  CRITIQUE
+}
+
+// NOUVEAUX ENUMS CRM BTP
+enum StatutInteraction {
+  A_TRAITER
+  EN_COURS
+  TERMINE
+  REPORTE
+}
+
+enum PrioriteOpportunite {
+  BASSE
+  NORMALE
+  HAUTE
+  CRITIQUE
+}
+
+enum TypeRelance {
+  EMAIL
+  TELEPHONE
+  SMS
+  COURRIER
+  VISITE
+}
+
+enum PrioriteTacheCommerciale {
+  BASSE
+  NORMALE
+  HAUTE
+  URGENTE
+}
+
+enum StatutTacheCommerciale {
+  A_FAIRE
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+enum TypeTemplate {
+  RELANCE
+  PROSPECTION
+  SUIVI
+  NEGOCIATION
+  CLOTURE
+}
+
+enum TypeAlerte {
+  RAPPEL
+  ECHEANCE
+  RELANCE
+  SUIVI
+  URGENT
+}
+
+enum RecurrenceAlerte {
+  AUCUNE
+  QUOTIDIENNE
+  HEBDOMADAIRE
+  MENSUELLE
+  ANNUELLE
+}
+
+// PHASE 2.3 - MODÈLES WORKFLOW D'AUTOMATISATION
+model WorkflowRule {
+  id          String @id @default(cuid())
+  nom         String
+  description String?
+  actif       Boolean @default(true)
+  
+  // Déclencheur
+  evenement   EvenementWorkflow
+  conditions  Json?  // Conditions JSON flexibles
+  
+  // Actions à exécuter
+  actions     Json   // Array d'actions JSON
+  
+  // Metadata
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  creator     User @relation("WorkflowCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  executions  WorkflowExecution[]
+
+  @@map("workflow_rules")
+}
+
+model WorkflowExecution {
+  id             String @id @default(cuid())
+  workflowRuleId String
+  
+  // Contexte d'exécution
+  evenement      String
+  contexte       Json   // Données contextuelles
+  
+  // Résultat
+  status         StatutExecution
+  resultats      Json?  // Résultats des actions
+  erreur         String?
+  
+  // Dates
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  
+  // Relations
+  workflowRule   WorkflowRule @relation(fields: [workflowRuleId], references: [id], onDelete: Cascade)
+
+  @@map("workflow_executions")
+}
+
+// ENUMS pour les workflows
+enum EvenementWorkflow {
+  CREATION_OPPORTUNITE
+  CHANGEMENT_STATUT
+  ECHEANCE_PROCHE
+  AUCUNE_INTERACTION
+  CREATION_CLIENT
+  CREATION_DEVIS
+  ACCEPTATION_DEVIS
+  REFUS_DEVIS
+}
+
+enum StatutExecution {
+  EN_ATTENTE
+  EN_COURS
+  SUCCES
+  ERREUR
+}
+
+// PHASE 2.4 - MODÈLES COMMUNICATIONS EMAIL/SMS
+model CommunicationClient {
+  id         String @id @default(cuid())
+  clientId   String
+  createdBy  String
+  
+  // Type et contenu
+  type       TypeCommunication
+  sujet      String?
+  message    String
+  
+  // Envoi
+  statut     StatutCommunication
+  dateEnvoi  DateTime?
+  erreur     String?
+  
+  // Template utilisé
+  templateId String?
+  
+  // Metadata
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  client     User @relation("ClientCommunications", fields: [clientId], references: [id], onDelete: Cascade)
+  creator    User @relation("CreatorCommunications", fields: [createdBy], references: [id], onDelete: Cascade)
+  template   TemplateCommunication? @relation(fields: [templateId], references: [id])
+
+  @@map("communications_clients")
+}
+
+model TemplateCommunication {
+  id         String @id @default(cuid())
+  nom        String
+  type       TypeCommunication
+  sujet      String?
+  contenu    String
+  variables  Json   // Array des variables disponibles
+  categorie  CategorieTemplate
+  
+  // Metadata
+  createdBy  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  creator    User @relation("TemplateCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  communications CommunicationClient[]
+
+  @@map("templates_communications")
+}
+
+// ENUMS pour les communications
+enum TypeCommunication {
+  EMAIL
+  SMS
+}
+
+enum StatutCommunication {
+  PROGRAMMEE
+  ENVOYE
+  ECHEC
+  OUVERT    // Pour les emails
+  CLIQUE    // Pour les emails avec liens
+  REPONDU
+}
+
+enum CategorieTemplate {
+  RELANCE
+  PROSPECTION
+  SUIVI
+  NEGOCIATION
+  CLOTURE
+}
+
+// PHASE 3.1 - MODÈLES SÉCURITÉ ET AUDIT
+model SecurityLog {
+  id        String @id @default(cuid())
+  userId    String?
+  
+  // Événement de sécurité
+  action    String
+  resource  String
+  ipAddress String
+  userAgent String
+  success   Boolean
+  riskLevel RiskLevel
+  
+  // Données contextuelles
+  details   Json?
+  timestamp DateTime @default(now())
+  
+  // Relations
+  user      User? @relation(fields: [userId], references: [id])
+
+  @@index([timestamp])
+  @@index([riskLevel])
+  @@index([action])
+  @@map("security_logs")
+}
+
+model CacheEntry {
+  id        String @id @default(cuid())
+  key       String @unique
+  value     Json
+  expiresAt DateTime?
+  tags      Json   @default("[]")
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+  @@map("cache_entries")
+}
+
+model PerformanceMetric {
+  id          String @id @default(cuid())
+  endpoint    String
+  method      String
+  duration    Int    // en millisecondes
+  statusCode  Int
+  userId      String?
+  ipAddress   String?
+  userAgent   String?
+  
+  // Métriques détaillées
+  memoryUsage Float?
+  dbQueries   Int?
+  cacheHits   Int?
+  cacheMisses Int?
+  
+  timestamp   DateTime @default(now())
+  
+  // Relations
+  user        User? @relation(fields: [userId], references: [id])
+
+  @@index([endpoint])
+  @@index([timestamp])
+  @@index([duration])
+  @@map("performance_metrics")
+}
+
+// ENUMS pour la sécurité
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// PHASE 3.2 - MODÈLES INTÉGRATIONS EXTERNES
+model Integration {
+  id           String @id @default(cuid())
+  name         String
+  type         IntegrationType
+  provider     String // sage, mapbox, openweather, etc.
+  enabled      Boolean @default(false)
+  
+  // Configuration
+  baseUrl      String?
+  apiVersion   String?
+  timeout      Int     @default(10000)
+  rateLimitRequests Int @default(100)
+  rateLimitWindow   Int @default(3600)
+  retryAttempts     Int @default(3)
+  
+  // Credentials (chiffrées)
+  apiKey       String?
+  apiSecret    String?
+  settings     Json?
+  
+  // Santé et métriques
+  status       IntegrationStatus @default(INACTIVE)
+  lastHealthCheck DateTime?
+  lastSync     DateTime?
+  totalRequests Int @default(0)
+  successfulRequests Int @default(0)
+  failedRequests Int @default(0)
+  averageResponseTime Float @default(0)
+  
+  // Relations
+  logs         IntegrationLog[]
+  syncRecords  SyncRecord[]
+  
+  // Metadata
+  createdBy    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([type])
+  @@index([provider])
+  @@index([status])
+  @@map("integrations")
+}
+
+model IntegrationLog {
+  id           String @id @default(cuid())
+  integrationId String
+  
+  // Détails de la requête
+  endpoint     String
+  method       String
+  statusCode   Int?
+  responseTime Int?
+  
+  // Résultat
+  success      Boolean
+  errorMessage String?
+  requestData  Json?
+  responseData Json?
+  
+  // Contexte
+  userId       String?
+  ipAddress    String?
+  userAgent    String?
+  
+  timestamp    DateTime @default(now())
+  
+  // Relations
+  integration  Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  user         User? @relation(fields: [userId], references: [id])
+  
+  @@index([integrationId])
+  @@index([timestamp])
+  @@index([success])
+  @@map("integration_logs")
+}
+
+model SyncRecord {
+  id           String @id @default(cuid())
+  integrationId String
+  
+  // Type de synchronisation
+  syncType     SyncType
+  direction    SyncDirection
+  
+  // Statistiques
+  totalItems   Int @default(0)
+  processedItems Int @default(0)
+  successfulItems Int @default(0)
+  failedItems  Int @default(0)
+  
+  // Statut
+  status       SyncStatus @default(PENDING)
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+  
+  // Métadonnées
+  details      Json?
+  
+  // Relations
+  integration  Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  
+  @@index([integrationId])
+  @@index([syncType])
+  @@index([status])
+  @@index([startedAt])
+  @@map("sync_records")
+}
+
+model ExternalData {
+  id           String @id @default(cuid())
+  
+  // Identification
+  externalId   String
+  externalType DataType
+  provider     String
+  
+  // Données
+  localId      String? // ID de l'entité locale correspondante
+  localType    String? // Type d'entité locale (client, facture, etc.)
+  data         Json
+  
+  // Synchronisation
+  lastSyncAt   DateTime @default(now())
+  hash         String? // Hash pour détecter les changements
+  
+  // Métadonnées
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([externalId, provider, externalType])
+  @@index([provider])
+  @@index([localId, localType])
+  @@index([lastSyncAt])
+  @@map("external_data")
+}
+
+// ENUMS pour les intégrations
+enum IntegrationType {
+  ACCOUNTING
+  MAPPING
+  WEATHER  
+  COMMUNICATION
+  CLOUD_STORAGE
+  E_SIGNATURE
+  PAYMENT
+  OTHER
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  DEGRADED
+  MAINTENANCE
+}
+
+enum SyncType {
+  CLIENTS
+  FACTURES
+  CHANTIERS
+  CONTACTS
+  DOCUMENTS
+  FULL
+  PARTIAL
+}
+
+enum SyncDirection {
+  IMPORT
+  EXPORT
+  BIDIRECTIONAL
+}
+
+enum SyncStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum DataType {
+  CLIENT
+  INVOICE
+  PAYMENT
+  DOCUMENT
+  CONTACT
+  WEATHER
+  LOCATION
+  OTHER
+}
+
+// PHASE 3.3 - MODÈLES BUSINESS INTELLIGENCE
+model BIReport {
+  id           String @id @default(cuid())
+  name         String
+  type         ReportType
+  frequency    ReportFrequency
+  
+  // Configuration
+  parameters   Json?
+  filters      Json?
+  enabled      Boolean @default(true)
+  
+  // Planification
+  nextRun      DateTime?
+  lastRun      DateTime?
+  
+  // Destinataires
+  recipients   Json? // Array d'emails ou IDs utilisateurs
+  
+  // Contenu généré
+  lastContent  Json?
+  
+  // Relations
+  executions   BIReportExecution[]
+  alerts       BIAlert[]
+  
+  // Metadata
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  creator      User @relation("BIReportCreator", fields: [createdBy], references: [id])
+  
+  @@index([type])
+  @@index([frequency])
+  @@index([enabled])
+  @@index([nextRun])
+  @@map("bi_reports")
+}
+
+model BIReportExecution {
+  id           String @id @default(cuid())
+  reportId     String
+  
+  // Exécution
+  status       ExecutionStatus @default(PENDING)
+  startedAt    DateTime @default(now())
+  completedAt  DateTime?
+  duration     Int? // en millisecondes
+  
+  // Résultats
+  content      Json?
+  errorMessage String?
+  recipients   Json? // Qui a reçu le rapport
+  
+  // Métriques
+  dataPoints   Int @default(0)
+  chartCount   Int @default(0)
+  fileSize     Int? // Taille du rapport généré
+  
+  // Relations
+  report       BIReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  
+  @@index([reportId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("bi_report_executions")
+}
+
+model BIAlert {
+  id           String @id @default(cuid())
+  name         String
+  description  String?
+  
+  // Configuration de l'alerte
+  metric       String // ex: "chiffre_affaires", "marge", "delai_paiement"
+  operator     AlertOperator // GREATER_THAN, LESS_THAN, EQUAL, etc.
+  threshold    Float
+  
+  // Conditions
+  conditions   Json? // Conditions additionnelles
+  frequency    AlertFrequency @default(DAILY)
+  
+  // État
+  enabled      Boolean @default(true)
+  lastCheck    DateTime?
+  lastTriggered DateTime?
+  triggerCount Int @default(0)
+  
+  // Actions
+  actions      Json? // Actions à effectuer (email, webhook, etc.)
+  
+  // Relations
+  reportId     String?
+  report       BIReport? @relation(fields: [reportId], references: [id])
+  notifications BIAlertNotification[]
+  
+  // Metadata
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  creator      User @relation("BIAlertCreator", fields: [createdBy], references: [id])
+  
+  @@index([metric])
+  @@index([enabled])
+  @@index([lastCheck])
+  @@index([frequency])
+  @@map("bi_alerts")
+}
+
+model BIAlertNotification {
+  id           String @id @default(cuid())
+  alertId      String
+  
+  // Déclenchement
+  triggeredAt  DateTime @default(now())
+  value        Float // Valeur qui a déclenché l'alerte
+  threshold    Float // Seuil configuré
+  
+  // Notification
+  status       NotificationStatus @default(PENDING)
+  sentAt       DateTime?
+  recipients   Json? // Qui a été notifié
+  
+  // Contenu
+  message      String?
+  details      Json?
+  
+  // Relations
+  alert        BIAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  
+  @@index([alertId])
+  @@index([triggeredAt])
+  @@index([status])
+  @@map("bi_alert_notifications")
+}
+
+model BIDashboard {
+  id           String @id @default(cuid())
+  name         String
+  description  String?
+  
+  // Configuration
+  layout       Json // Configuration du layout des widgets
+  widgets      Json // Configuration des widgets
+  filters      Json? // Filtres par défaut
+  
+  // Visibilité
+  isPublic     Boolean @default(false)
+  sharedWith   Json? // Array d'IDs utilisateurs
+  
+  // Relations
+  views        BIDashboardView[]
+  
+  // Metadata
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  creator      User @relation("BIDashboardCreator", fields: [createdBy], references: [id])
+  
+  @@index([createdBy])
+  @@index([isPublic])
+  @@map("bi_dashboards")
+}
+
+model BIDashboardView {
+  id           String @id @default(cuid())
+  dashboardId  String
+  userId       String
+  
+  // Statistiques de vue
+  viewedAt     DateTime @default(now())
+  duration     Int? // Temps passé en secondes
+  interactions Int @default(0) // Nombre d'interactions
+  
+  // Relations
+  dashboard    BIDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  user         User @relation("BIDashboardViewer", fields: [userId], references: [id])
+  
+  @@index([dashboardId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@map("bi_dashboard_views")
+}
+
+model BIMetricSnapshot {
+  id           String @id @default(cuid())
+  
+  // Identification de la métrique
+  metric       String
+  category     MetricCategory
+  
+  // Valeurs
+  value        Float
+  previousValue Float?
+  change       Float? // Changement par rapport à la valeur précédente
+  changePercent Float?
+  
+  // Période
+  period       String // Format: YYYY-MM-DD pour jour, YYYY-MM pour mois, etc.
+  periodType   PeriodType
+  
+  // Contexte
+  dimensions   Json? // Dimensions additionnelles (par client, par type, etc.)
+  metadata     Json? // Métadonnées sur le calcul
+  
+  // Timestamp
+  calculatedAt DateTime @default(now())
+  
+  @@unique([metric, period, periodType])
+  @@index([metric])
+  @@index([category])
+  @@index([periodType])
+  @@index([calculatedAt])
+  @@map("bi_metric_snapshots")
+}
+
+// ENUMS pour Business Intelligence
+enum ReportType {
+  PERFORMANCE
+  FINANCIAL
+  OPERATIONAL
+  PREDICTIVE
+  CUSTOM
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  ON_DEMAND
+}
+
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AlertOperator {
+  GREATER_THAN
+  LESS_THAN
+  EQUAL
+  NOT_EQUAL
+  GREATER_OR_EQUAL
+  LESS_OR_EQUAL
+  BETWEEN
+  NOT_BETWEEN
+}
+
+enum AlertFrequency {
+  REAL_TIME
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum MetricCategory {
+  FINANCIAL
+  OPERATIONAL
+  COMMERCIAL
+  RESOURCE
+  QUALITY
+  PRODUCTIVITY
+}
+
+enum PeriodType {
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+// PHASE 3.4 - MODÈLES CONFORMITÉ RGPD
+model GDPRConsent {
+  id           String @id @default(cuid())
+  userId       String
+  purpose      ConsentPurpose
+  granted      Boolean
+  ipAddress    String
+  userAgent    String
+  timestamp    DateTime @default(now())
+  
+  // Révocation
+  revokedAt    DateTime?
+  revokedIpAddress String?
+  revokedUserAgent String?
+  
+  // Relations
+  user         User @relation("GDPRConsents", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([purpose])
+  @@index([granted])
+  @@index([timestamp])
+  @@map("gdpr_consents")
+}
+
+model DataRightsRequest {
+  id           String @id @default(cuid())
+  userId       String
+  type         DataRightsType
+  status       RequestStatus @default(PENDING)
+  
+  // Détails de la demande
+  requestData  Json?
+  processedData Json?
+  requestNote  String?
+  
+  // Traitement
+  processorUserId String?
+  processedAt  DateTime?
+  responseNote String?
+  
+  // Métadonnées
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime? // Pour les demandes d'accès
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  user         User @relation("DataRightsRequests", fields: [userId], references: [id], onDelete: Cascade)
+  processor    User? @relation("ProcessedDataRights", fields: [processorUserId], references: [id])
+  
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@map("data_rights_requests")
+}
+
+model GDPRProcessingLog {
+  id           String @id @default(cuid())
+  userId       String
+  dataType     ProcessedDataType
+  operation    DataOperation
+  
+  // Contexte
+  lawfulBasis  LawfulBasis
+  purpose      String
+  source       String // API endpoint, import, etc.
+  
+  // Détails
+  dataCategories Json? // Types de données traitées
+  retention    Int? // Durée de conservation en jours
+  
+  // Métadonnées
+  timestamp    DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  
+  // Relations  
+  user         User @relation("ProcessingLogs", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([dataType])
+  @@index([operation])
+  @@index([timestamp])
+  @@map("gdpr_processing_logs")
+}
+
+model DataRetention {
+  id           String @id @default(cuid())
+  dataType     ProcessedDataType
+  category     String
+  
+  // Politique de conservation
+  retentionDays Int
+  lawfulBasis  LawfulBasis
+  description  String?
+  
+  // Automatisation
+  autoDelete   Boolean @default(false)
+  lastCleanup  DateTime?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([dataType, category])
+  @@index([dataType])
+  @@map("data_retention_policies")
+}
+
+model DataBreach {
+  id           String @id @default(cuid())
+  
+  // Identification
+  title        String
+  description  String
+  severity     BreachSeverity
+  status       BreachStatus @default(DETECTED)
+  
+  // Données affectées
+  affectedDataTypes Json
+  affectedUsersCount Int?
+  affectedRecords Json?
+  
+  // Timeline
+  detectedAt   DateTime @default(now())
+  occurredAt   DateTime?
+  resolvedAt   DateTime?
+  reportedAt   DateTime?
+  
+  // Actions
+  containmentActions Json?
+  mitigationActions Json?
+  notificationsSent Json?
+  
+  // Responsable
+  reportedBy   String
+  assignedTo   String?
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([status])
+  @@index([severity])
+  @@index([detectedAt])
+  @@map("data_breaches")
+}
+
+// ENUMS RGPD
+enum ConsentPurpose {
+  MARKETING
+  ANALYTICS
+  COMMUNICATION
+  PROFILING
+  THIRD_PARTY_SHARING
+  COOKIES
+  GEOLOCATION
+  PHOTO_STORAGE
+}
+
+enum DataRightsType {
+  ACCESS          // Article 15
+  RECTIFICATION   // Article 16
+  ERASURE         // Article 17
+  RESTRICT        // Article 18
+  PORTABILITY     // Article 20
+  OBJECT          // Article 21
+}
+
+enum RequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+  EXPIRED
+}
+
+enum ProcessedDataType {
+  PERSONAL
+  CONTACT
+  BEHAVIORAL
+  PREFERENCES
+  LOCATION
+  BIOMETRIC
+  FINANCIAL
+  HEALTH
+  PROFESSIONAL
+}
+
+enum DataOperation {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  EXPORT
+  IMPORT
+  SHARE
+  ANONYMIZE
+}
+
+enum LawfulBasis {
+  CONSENT
+  CONTRACT
+  LEGAL_OBLIGATION
+  VITAL_INTERESTS
+  PUBLIC_TASK
+  LEGITIMATE_INTERESTS
+}
+
+enum BreachSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BreachStatus {
+  DETECTED
+  INVESTIGATING
+  CONTAINED
+  RESOLVED
+  REPORTED
+  CLOSED
+}
