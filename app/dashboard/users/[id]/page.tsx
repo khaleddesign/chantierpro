@@ -22,6 +22,7 @@ interface UserData {
   chiffreAffaires?: number;
   image?: string;
   commercialId?: string;
+  password?: string; // For create mode
   createdAt: string;
   updatedAt: string;
 }
@@ -42,52 +43,10 @@ export default function EditUserPage() {
     confirmPassword: ''
   });
 
-  // Données mockées pour la démonstration
   useEffect(() => {
     const fetchUser = async () => {
       setLoading(true);
       try {
-        // Simulation d'un appel API
-        const mockUsers: Record<string, UserData> = {
-          '1': {
-            id: '1',
-            name: 'Sophie Durand',
-            email: 'sophie.durand@email.com',
-            phone: '+33 6 12 34 56 78',
-            company: 'Durand & Associés',
-            address: '15 Rue de la Paix',
-            ville: 'Paris',
-            codePostal: '75001',
-            role: 'CLIENT',
-            typeClient: 'PROFESSIONNEL',
-            secteurActivite: 'Immobilier',
-            chiffreAffaires: 850000,
-            createdAt: '2024-01-15T10:00:00Z',
-            updatedAt: '2024-01-20T14:30:00Z'
-          },
-          '2': {
-            id: '2',
-            name: 'Pierre Martin',
-            email: 'pierre.martin@chantierpro.fr',
-            phone: '+33 6 87 65 43 21',
-            address: '25 Avenue de la République',
-            ville: 'Lyon',
-            codePostal: '69002',
-            role: 'COMMERCIAL',
-            createdAt: '2024-01-10T09:00:00Z',
-            updatedAt: '2024-01-25T16:45:00Z'
-          },
-          '3': {
-            id: '3',
-            name: 'Marie Leclerc',
-            email: 'marie.leclerc@chantierpro.fr',
-            phone: '+33 1 23 45 67 89',
-            role: 'ADMIN',
-            createdAt: '2024-01-01T08:00:00Z',
-            updatedAt: '2024-01-30T12:00:00Z'
-          }
-        };
-        
         if (isCreateMode) {
           // Mode création - utilisateur vide avec valeurs par défaut
           const newUser: UserData = {
@@ -111,12 +70,24 @@ export default function EditUserPage() {
           };
           setUser(newUser);
         } else {
-          // Mode modification - charger l'utilisateur existant
-          const userData = mockUsers[userId] || mockUsers['1'];
-          setUser(userData);
+          // Mode modification - charger l'utilisateur existant depuis l'API
+          const response = await fetch(`/api/users/${userId}`);
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data) {
+              setUser(result.data);
+            } else {
+              console.error('Utilisateur non trouvé');
+              router.push('/dashboard/users');
+            }
+          } else {
+            console.error('Erreur lors du chargement de l\'utilisateur:', response.status);
+            router.push('/dashboard/users');
+          }
         }
       } catch (error) {
         console.error('Erreur lors du chargement de l\'utilisateur:', error);
+        router.push('/dashboard/users');
       } finally {
         setLoading(false);
       }
@@ -125,7 +96,7 @@ export default function EditUserPage() {
     if (userId) {
       fetchUser();
     }
-  }, [userId]);
+  }, [userId, isCreateMode, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,11 +104,41 @@ export default function EditUserPage() {
 
     setSaving(true);
     try {
-      // Simulation de sauvegarde
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const message = isCreateMode ? 'Utilisateur créé avec succès !' : 'Utilisateur mis à jour avec succès !';
-      alert(message);
-      router.push('/dashboard/users');
+      if (isCreateMode) {
+        // Mode création - utiliser l'API de création d'utilisateur
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user)
+        });
+
+        if (response.ok) {
+          alert('Utilisateur créé avec succès !');
+          router.push('/dashboard/users');
+        } else {
+          const error = await response.json();
+          alert(`Erreur lors de la création: ${error.error || 'Erreur inconnue'}`);
+        }
+      } else {
+        // Mode modification - utiliser l'API de mise à jour
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user)
+        });
+
+        if (response.ok) {
+          alert('Utilisateur mis à jour avec succès !');
+          router.push('/dashboard/users');
+        } else {
+          const error = await response.json();
+          alert(`Erreur lors de la mise à jour: ${error.error || 'Erreur inconnue'}`);
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde:', error);
       const errorMessage = isCreateMode ? 'Erreur lors de la création' : 'Erreur lors de la sauvegarde';
@@ -152,18 +153,53 @@ export default function EditUserPage() {
       alert('Les mots de passe ne correspondent pas');
       return;
     }
-    if (passwordData.newPassword.length < 6) {
-      alert('Le mot de passe doit contenir au moins 6 caractères');
+    if (passwordData.newPassword.length < 12) {
+      alert('Le mot de passe doit contenir au moins 12 caractères');
+      return;
+    }
+
+    // Validation de la complexité du mot de passe (alignée sur l'API)
+    const hasUpperCase = /[A-Z]/.test(passwordData.newPassword);
+    const hasLowerCase = /[a-z]/.test(passwordData.newPassword);
+    const hasNumbers = /\d/.test(passwordData.newPassword);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(passwordData.newPassword);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+      alert('Le mot de passe doit contenir au moins : une majuscule, une minuscule, un chiffre et un caractère spécial');
       return;
     }
 
     setSaving(true);
     try {
-      // Simulation de changement de mot de passe
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Mot de passe modifié avec succès !');
-      setShowPasswordForm(false);
-      setPasswordData({ newPassword: '', confirmPassword: '' });
+      if (isCreateMode) {
+        // En mode création, juste mettre à jour l'état local
+        if (user) {
+          setUser({ ...user, password: passwordData.newPassword });
+          alert('Mot de passe défini avec succès !');
+          setShowPasswordForm(false);
+          setPasswordData({ newPassword: '', confirmPassword: '' });
+        }
+      } else {
+        // En mode modification, envoyer la mise à jour du mot de passe à l'API
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            password: passwordData.newPassword
+          })
+        });
+
+        if (response.ok) {
+          alert('Mot de passe modifié avec succès !');
+          setShowPasswordForm(false);
+          setPasswordData({ newPassword: '', confirmPassword: '' });
+        } else {
+          const error = await response.json();
+          alert(`Erreur lors du changement de mot de passe: ${error.error || 'Erreur inconnue'}`);
+        }
+      }
     } catch (error) {
       console.error('Erreur lors du changement de mot de passe:', error);
       alert('Erreur lors du changement de mot de passe');

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { cache } from '@/lib/cache';
 import { checkPermission, logSecurityEvent } from '@/lib/security';
+import { getClientIp } from '@/lib/utils';
 import { z } from 'zod';
 
 const cacheQuerySchema = z.object({
@@ -77,8 +78,10 @@ export async function GET(request: NextRequest) {
 
     const tagStats = cacheEntries.reduce((stats, entry) => {
       const tags = Array.isArray(entry.tags) ? entry.tags : [];
-      tags.forEach(tag => {
-        stats[tag] = (stats[tag] || 0) + 1;
+      tags.forEach((tag: any) => {
+        if (typeof tag === 'string') {
+          stats[tag] = (stats[tag] || 0) + 1;
+        }
       });
       return stats;
     }, {} as Record<string, number>);
@@ -117,7 +120,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: 'VIEW_CACHE_STATS',
       resource: 'cache',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -143,7 +146,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Paramètres invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -192,7 +195,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           action: 'CACHE_FLUSH_ALL',
           resource: 'cache',
-          ipAddress: request.ip || 'unknown',
+          ipAddress: getClientIp(request),
           userAgent: request.headers.get('user-agent') || 'unknown',
           success: true,
           riskLevel: 'MEDIUM',
@@ -214,7 +217,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           action: 'CACHE_CLEAR_EXPIRED',
           resource: 'cache',
-          ipAddress: request.ip || 'unknown',
+          ipAddress: getClientIp(request),
           userAgent: request.headers.get('user-agent') || 'unknown',
           success: true,
           riskLevel: 'LOW',
@@ -260,7 +263,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           action: 'CACHE_INVALIDATE_PATTERN',
           resource: 'cache',
-          ipAddress: request.ip || 'unknown',
+          ipAddress: getClientIp(request),
           userAgent: request.headers.get('user-agent') || 'unknown',
           success: true,
           riskLevel: 'LOW',
@@ -293,7 +296,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: 'CACHE_ACTION_ERROR',
         resource: 'cache',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: getClientIp(request),
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'MEDIUM',
@@ -304,7 +307,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Paramètres invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -386,7 +389,7 @@ export async function deleteEntryByKey(key: string, request: NextRequest) {
       userId: session.user.id,
       action: 'CACHE_DELETE_ENTRY',
       resource: 'cache',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',

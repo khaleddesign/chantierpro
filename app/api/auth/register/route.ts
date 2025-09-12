@@ -13,7 +13,8 @@ async function registerHandler(request: NextRequest) {
       password, 
       phone, 
       company, 
-      typeClient = "PARTICULIER" 
+      typeClient = "PARTICULIER",
+      role = "CLIENT"
     } = body;
 
     // Validation des champs obligatoires
@@ -96,7 +97,7 @@ async function registerHandler(request: NextRequest) {
           password: hashedPassword,
           phone: phone || null,
           company: company || null,
-          role: Role.CLIENT, // Par défaut, les nouvelles inscriptions sont des clients
+          role: role as Role,
           typeClient: typeClient as TypeClient,
           prefEmail: true,
           prefSMS: false,

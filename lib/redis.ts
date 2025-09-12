@@ -12,7 +12,13 @@ class RedisClient {
 
   private async initializeClient() {
     try {
-      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      // Skip Redis initialization if REDIS_URL is not set
+      if (!process.env.REDIS_URL) {
+        console.log('Redis disabled - using memory fallback');
+        return;
+      }
+      
+      const redisUrl = process.env.REDIS_URL;
       
       this.client = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,

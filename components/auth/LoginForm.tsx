@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, Eye, EyeOff, AlertCircle } from "lucide-react";
-import Link from "next/link";
 
 export function LoginForm() {
   const { login, isLoading, error, clearError } = useAuth();
@@ -141,12 +140,12 @@ export function LoginForm() {
         <div className="text-center">
           <p className="text-sm text-gray-600">
             Pas encore de compte ?{' '}
-            <Link
+            <a
               href="/auth/register"
               className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
             >
               Créer un compte
-            </Link>
+            </a>
           </p>
         </div>
       </div>

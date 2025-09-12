@@ -9,6 +9,7 @@ import { Building2, Eye, EyeOff, AlertCircle, User, Mail, Phone, Building } from
 import Link from "next/link";
 
 type TypeClient = 'PARTICULIER' | 'PROFESSIONNEL';
+type Role = 'CLIENT' | 'COMMERCIAL' | 'ADMIN' | 'OUVRIER';
 
 export function RegisterForm() {
   const { register, isLoading, error, clearError } = useAuth();
@@ -20,6 +21,7 @@ export function RegisterForm() {
     confirmPassword: "",
     phone: "",
     company: "",
+    role: "CLIENT" as Role,
     typeClient: "PARTICULIER" as TypeClient,
   });
 
@@ -36,8 +38,19 @@ export function RegisterForm() {
       return;
     }
 
-    if (userData.password.length < 6) {
-      setPasswordError("Le mot de passe doit contenir au moins 6 caractères");
+    // Validation renforcée du mot de passe (aligné sur l'API)
+    if (userData.password.length < 12) {
+      setPasswordError("Le mot de passe doit contenir au moins 12 caractères");
+      return;
+    }
+
+    const hasUpperCase = /[A-Z]/.test(userData.password);
+    const hasLowerCase = /[a-z]/.test(userData.password);
+    const hasNumbers = /\d/.test(userData.password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(userData.password);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
+      setPasswordError("Le mot de passe doit contenir au moins : une majuscule, une minuscule, un chiffre et un caractère spécial");
       return;
     }
 
@@ -146,6 +159,26 @@ export function RegisterForm() {
           </div>
 
           <div>
+            <Label htmlFor="role" className="text-gray-700 font-medium">
+              Rôle *
+            </Label>
+            <select
+              id="role"
+              name="role"
+              value={userData.role}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-input bg-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              disabled={isLoading}
+              required
+            >
+              <option value="CLIENT">Client</option>
+              <option value="COMMERCIAL">Commercial</option>
+              <option value="ADMIN">Administrateur</option>
+              <option value="OUVRIER">Ouvrier</option>
+            </select>
+          </div>
+
+          <div>
             <Label htmlFor="typeClient" className="text-gray-700 font-medium">
               Type de client
             </Label>
@@ -195,7 +228,7 @@ export function RegisterForm() {
                 required
                 value={userData.password}
                 onChange={handleChange}
-                placeholder="Au moins 6 caractères"
+                placeholder="Au moins 12 caractères avec majuscules, chiffres et caractères spéciaux"
                 className="pr-10"
                 disabled={isLoading}
               />

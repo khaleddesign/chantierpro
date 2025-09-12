@@ -3,9 +3,10 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { GDPRDataController } from '@/lib/gdpr/data-controller';
 import { checkPermission, logSecurityEvent } from '@/lib/security';
+import { getClientIp } from '@/lib/utils';
 import { z } from 'zod';
 
-const gdprController = new GDPRDataController();
+const gdprController = GDPRDataController.getInstance();
 
 const processRequestSchema = z.object({
   requestId: z.string(),
@@ -86,7 +87,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: `GDPR_ADMIN_VIEW_${action?.toUpperCase()}`,
       resource: 'gdpr_admin',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'MEDIUM',
@@ -194,7 +195,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       action: `GDPR_ADMIN_ACTION_${action.toUpperCase()}`,
       resource: 'gdpr_admin',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'HIGH',
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: 'GDPR_ADMIN_ERROR',
         resource: 'gdpr_admin',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: getClientIp(request),
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'CRITICAL',
@@ -227,7 +228,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Données invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -294,7 +295,7 @@ export async function PUT(request: NextRequest) {
       userId: session.user.id,
       action: `GDPR_ADMIN_UPDATE_${action.toUpperCase()}`,
       resource: 'gdpr_admin',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: getClientIp(request),
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'HIGH',
@@ -312,7 +313,7 @@ export async function PUT(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Données invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
