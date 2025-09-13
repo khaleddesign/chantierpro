@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -316,19 +316,57 @@ export default function PipelineCommercialPage() {
     }
   };
 
-  const filteredOpportunites = opportunites.filter(opp => {
-    const clientName = opp.client?.nom || opp.client?.name || '';
-    const titre = opp.titre || opp.nom || opp.description || '';
-    const matchSearch = titre.toLowerCase().includes(filters.search.toLowerCase()) ||
-                       clientName.toLowerCase().includes(filters.search.toLowerCase()) ||
-                       (opp.client?.company && opp.client.company.toLowerCase().includes(filters.search.toLowerCase()));
-    
-    const matchValeurMin = !filters.valeurMin || opp.valeurEstimee >= parseFloat(filters.valeurMin);
-    const matchValeurMax = !filters.valeurMax || opp.valeurEstimee <= parseFloat(filters.valeurMax);
-    const matchPriorite = filters.priorite === 'TOUS' || opp.priorite === filters.priorite;
-    
-    return matchSearch && matchValeurMin && matchValeurMax && matchPriorite;
-  });
+  // Protection absolue contre les erreurs
+  const safeOpportunites = React.useMemo(() => {
+    try {
+      return Array.isArray(opportunites) ? opportunites : [];
+    } catch (e) {
+      console.error('Erreur lors de l\'accès aux opportunités:', e);
+      return [];
+    }
+  }, [opportunites]);
+
+  const filteredOpportunites = React.useMemo(() => {
+    try {
+      const safeTerm = String(filters?.search || '').toLowerCase();
+      const safeValeurMin = parseFloat(filters?.valeurMin || '0') || 0;
+      const safeValeurMax = parseFloat(filters?.valeurMax || '0') || Infinity;
+      const safePriorite = String(filters?.priorite || 'TOUS');
+      
+      return safeOpportunites.filter(opp => {
+        try {
+          if (!opp) return false;
+          
+          // Recherche textuelle sécurisée
+          let matchSearch = true;
+          if (safeTerm.trim()) {
+            const titre = String(opp.titre || opp.nom || opp.description || '').toLowerCase();
+            const clientName = String(opp.client?.nom || opp.client?.name || '').toLowerCase();
+            const company = String(opp.client?.company || '').toLowerCase();
+            
+            matchSearch = titre.includes(safeTerm) || 
+                         clientName.includes(safeTerm) || 
+                         company.includes(safeTerm);
+          }
+          
+          // Filtres numériques sécurisés
+          const valeur = parseFloat(opp.valeurEstimee) || 0;
+          const matchValeur = (!filters?.valeurMin || valeur >= safeValeurMin) &&
+                             (!filters?.valeurMax || valeur <= safeValeurMax);
+          
+          // Filtre priorité sécurisé
+          const matchPriorite = safePriorite === 'TOUS' || String(opp.priorite) === safePriorite;
+          
+          return matchSearch && matchValeur && matchPriorite;
+        } catch (error) {
+          return false;
+        }
+      });
+    } catch (error) {
+      console.error('Erreur complète de filtrage:', error);
+      return [];
+    }
+  }, [safeOpportunites, filters]);
 
   const getOpportunitesByStage = (stageId: string) => {
     return filteredOpportunites.filter(opp => opp.statut === stageId);
@@ -477,7 +515,7 @@ export default function PipelineCommercialPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <Input
                 placeholder="Rechercher opportunité ou client..."
-                value={filters.search}
+                value={filters.search || ''}
                 onChange={(e) => setFilters({...filters, search: e.target.value})}
               />
               <Input

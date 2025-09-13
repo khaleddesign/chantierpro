@@ -1,26 +1,14 @@
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, createContext } from 'react';
+import { useState } from 'react';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  company?: string;
 }
-
-export interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: any) => Promise<boolean>;
-  logout: () => void;
-  isLoading: boolean;
-  error: string | null;
-  clearError: () => void;
-  isAuthenticated: boolean;
-}
-
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth() {
   const { data: session, status } = useSession();
@@ -30,6 +18,7 @@ export function useAuth() {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setError(null);
+      
       const result = await signIn('credentials', {
         email,
         password,
@@ -42,10 +31,6 @@ export function useAuth() {
       }
 
       if (result?.ok) {
-        // Attendre un petit délai pour que la session soit mise à jour
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 100);
         return true;
       }
 
@@ -88,10 +73,6 @@ export function useAuth() {
       });
 
       if (loginResult?.ok) {
-        // Attendre un petit délai pour que la session soit mise à jour
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 100);
         return true;
       } else {
         // Inscription réussie mais connexion échouée

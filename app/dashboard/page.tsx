@@ -1,6 +1,8 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { ClientOnly } from "@/components/ui/ClientOnly";
+import { useState, useEffect } from "react";
 import { 
   Calendar, TrendingUp, Users, AlertTriangle, Clock, Settings,
   Plus, ArrowRight, BarChart3, DollarSign, Building2, CheckCircle2,
@@ -11,8 +13,32 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function DashboardPage() {
+  return (
+    <ClientOnly>
+      <DashboardContent />
+    </ClientOnly>
+  );
+}
+
+function DashboardContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (user.role === "CLIENT") {
+        setIsRedirecting(true);
+        router.push("/dashboard/client");
+        return;
+      }
+      if (user.role === "OUVRIER") {
+        setIsRedirecting(true);
+        router.push("/dashboard/ouvrier");
+        return;
+      }
+    }
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -27,18 +53,26 @@ export default function DashboardPage() {
     );
   }
 
-  if (!user) return null;
-
-  // Redirection pour les ouvriers vers leur dashboard spécialisé
-  if (user.role === "OUVRIER") {
-    router.push("/dashboard/ouvrier");
+  if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+          <div className="text-lg font-semibold text-gray-900">Chargement...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isRedirecting || user.role === "CLIENT" || user.role === "OUVRIER") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <Building2 size={32} />
           </div>
-          <div className="text-lg font-semibold text-gray-900">Redirection vers vos chantiers...</div>
+          <div className="text-lg font-semibold text-gray-900">
+            Redirection vers votre espace...
+          </div>
         </div>
       </div>
     );

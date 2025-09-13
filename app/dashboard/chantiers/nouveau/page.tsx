@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { ArrowLeft, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ const STATUT_OPTIONS = [
 
 export default function NouveauChantierPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { createChantier, loading } = useChantiers();
   const { success, error: showError } = useToastContext();
   
@@ -60,6 +62,21 @@ export default function NouveauChantierPage() {
   });
 
   const fetchClients = async () => {
+    if (!session) return;
+    
+    // Si l'utilisateur est un client, il ne peut créer que pour lui-même
+    if (session.user.role === "CLIENT") {
+      setClients([{
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email
+      }]);
+      // Définir automatiquement le clientId
+      setFormData(prev => ({ ...prev, clientId: session.user.id }));
+      return;
+    }
+
+    // Pour les admins et commerciaux, charger tous les clients
     setLoadingClients(true);
     try {
       const response = await fetch('/api/users?role=CLIENT');
@@ -76,7 +93,7 @@ export default function NouveauChantierPage() {
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,27 +203,29 @@ export default function NouveauChantierPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Client *
-                  </label>
-                  <select
-                    value={formData.clientId}
-                    onChange={(e) => handleChange('clientId', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                    disabled={loadingClients}
-                  >
-                    <option value="">
-                      {loadingClients ? 'Chargement...' : 'Sélectionner un client'}
-                    </option>
-                    {clients.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.name} {client.company && `(${client.company})`}
+                {session?.user.role !== "CLIENT" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Client *
+                    </label>
+                    <select
+                      value={formData.clientId}
+                      onChange={(e) => handleChange('clientId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                      disabled={loadingClients}
+                    >
+                      <option value="">
+                        {loadingClients ? 'Chargement...' : 'Sélectionner un client'}
                       </option>
-                    ))}
-                  </select>
-                </div>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name} {client.company && `(${client.company})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

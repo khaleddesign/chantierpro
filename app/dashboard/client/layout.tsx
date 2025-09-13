@@ -1,26 +1,56 @@
-import { getServerSession } from "next-auth/next";
-import { redirect } from "next/navigation";
-import { authOptions } from "@/lib/auth";
-import { ClientDashboardLayout } from "@/components/layout/ClientDashboardLayout";
+"use client";
 
-export default async function ClientDashboard({
+import { useAuth } from "@/hooks/useAuth";
+import { ClientDashboardLayout } from "@/components/layout/ClientDashboardLayout";
+import { ClientOnly } from "@/components/ui/ClientOnly";
+
+export default function ClientDashboard({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  return (
+    <ClientOnly>
+      <ClientDashboardContent>
+        {children}
+      </ClientDashboardContent>
+    </ClientOnly>
+  );
+}
 
-  if (!session) {
-    redirect("/auth/signin");
+function ClientDashboardContent({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <div className="w-8 h-8 bg-white rounded-lg"></div>
+          </div>
+          <div className="text-lg font-semibold text-gray-900">Chargement...</div>
+        </div>
+      </div>
+    );
   }
 
-  // Seuls les clients peuvent accéder à cette zone
-  if (session.user.role !== "CLIENT") {
-    redirect("/dashboard");
+  // Let middleware handle role redirects to avoid loops
+  if (user.role !== "CLIENT") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-gray-900">Accès non autorisé</div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <ClientDashboardLayout user={session.user}>
+    <ClientDashboardLayout user={user}>
       {children}
     </ClientDashboardLayout>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ImageUpload } from "@/components/ui/ImageUpload";
@@ -39,6 +40,7 @@ const TYPE_OPTIONS = [
 ];
 
 export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps) {
+  const { data: session } = useSession();
   const { createChantier, updateChantier, loading } = useChantiers();
   const { success, error: showError } = useToastContext();
   
@@ -63,6 +65,23 @@ export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps
   });
 
   const fetchClients = async () => {
+    if (!session) return;
+    
+    // Si l'utilisateur est un client, il ne peut créer que pour lui-même
+    if (session.user.role === "CLIENT") {
+      setClients([{
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email
+      }]);
+      // Définir automatiquement le clientId si ce n'est pas un chantier existant
+      if (!chantier) {
+        setFormData(prev => ({ ...prev, clientId: session.user.id }));
+      }
+      return;
+    }
+
+    // Pour les admins et commerciaux, charger tous les clients
     setLoadingClients(true);
     try {
       const response = await fetch('/api/users?role=CLIENT');
@@ -79,7 +98,7 @@ export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps
 
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [session]);
 
   // Réinitialiser les données du formulaire quand le chantier change
   useEffect(() => {
@@ -203,27 +222,29 @@ export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client *
-                </label>
-                <select
-                  value={formData.clientId}
-                  onChange={(e) => handleChange('clientId', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                  disabled={loadingClients}
-                >
-                  <option value="">
-                    {loadingClients ? 'Chargement...' : 'Sélectionner un client'}
-                  </option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name} {client.company && `(${client.company})`}
+              {session?.user.role !== "CLIENT" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Client *
+                  </label>
+                  <select
+                    value={formData.clientId}
+                    onChange={(e) => handleChange('clientId', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                    disabled={loadingClients}
+                  >
+                    <option value="">
+                      {loadingClients ? 'Chargement...' : 'Sélectionner un client'}
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.name} {client.company && `(${client.company})`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

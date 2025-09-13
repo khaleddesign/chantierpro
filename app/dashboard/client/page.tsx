@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { ClientOnly } from "@/components/ui/ClientOnly";
 import { 
   Building2, FileText, Calendar, MessageSquare, CheckCircle2,
   Clock, AlertTriangle, MapPin, Phone, Mail, User
@@ -8,6 +9,14 @@ import {
 import Link from "next/link";
 
 export default function ClientDashboardPage() {
+  return (
+    <ClientOnly>
+      <ClientDashboardContent />
+    </ClientOnly>
+  );
+}
+
+function ClientDashboardContent() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {

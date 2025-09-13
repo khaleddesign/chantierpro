@@ -32,6 +32,10 @@ interface ClientDashboardLayoutProps {
 export function ClientDashboardLayout({ children, user }: ClientDashboardLayoutProps) {
   const { logout } = useAuth();
   const pathname = usePathname();
+  
+  const handleLogout = () => {
+    logout();
+  };
 
   const navigation = [
     { name: "Mon espace", href: "/dashboard/client", icon: Home },
@@ -106,7 +110,7 @@ export function ClientDashboardLayout({ children, user }: ClientDashboardLayoutP
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={logout}
+                onClick={handleLogout}
                 className="flex-shrink-0 ml-2"
                 title="Se déconnecter"
               >

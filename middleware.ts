@@ -20,39 +20,24 @@ export default withAuth(
     const isAuthPage = req.nextUrl.pathname.startsWith("/auth");
     const isDashboard = req.nextUrl.pathname.startsWith("/dashboard");
 
-    // Si utilisateur connecté et sur une page d'auth, rediriger vers dashboard
-    if (isAuth && isAuthPage) {
-      const role = token.role;
-      switch (role) {
-        case 'CLIENT':
-          return NextResponse.redirect(new URL("/dashboard/client", req.url));
-        case 'ADMIN':
-        case 'COMMERCIAL':
-        default:
-          return NextResponse.redirect(new URL("/dashboard", req.url));
-      }
-    }
-
     // Si non connecté et sur une page protégée, rediriger vers login
     if (!isAuth && isDashboard) {
       return NextResponse.redirect(new URL("/auth/signin", req.url));
     }
 
-    // Vérifier les permissions spécifiques aux rôles
+    // Si utilisateur connecté et sur une page d'auth, rediriger vers dashboard approprié
+    if (isAuth && isAuthPage) {
+      const role = token.role;
+      if (role === 'CLIENT') {
+        return NextResponse.redirect(new URL("/dashboard/client", req.url));
+      }
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+
+    // Vérifications des permissions par rôle (sans redirections en boucle)
     if (isAuth && isDashboard && token?.role) {
       const role = token.role;
       const pathname = req.nextUrl.pathname;
-
-      // Éviter les boucles infinies - ne pas rediriger si déjà sur la bonne page
-      if (role === "CLIENT" && pathname.startsWith("/dashboard/client")) {
-        // Client déjà sur la bonne section, laisser passer
-        return NextResponse.next();
-      }
-      
-      if ((role === "ADMIN" || role === "COMMERCIAL") && pathname === "/dashboard") {
-        // Admin/Commercial déjà sur la bonne section, laisser passer
-        return NextResponse.next();
-      }
 
       // Routes admin seulement
       if (pathname.startsWith("/dashboard/admin") && role !== "ADMIN") {
@@ -64,14 +49,14 @@ export default withAuth(
         return NextResponse.redirect(new URL("/dashboard", req.url));
       }
 
-      // Redirection pour les clients vers leur espace
-      if (role === "CLIENT" && !pathname.startsWith("/dashboard/client")) {
-        return NextResponse.redirect(new URL("/dashboard/client", req.url));
-      }
-
       // Rediriger les non-clients qui tentent d'accéder à l'espace client
       if (role !== "CLIENT" && pathname.startsWith("/dashboard/client")) {
         return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+
+      // Redirection des clients vers leur espace (uniquement depuis /dashboard exact)
+      if (role === "CLIENT" && pathname === "/dashboard") {
+        return NextResponse.redirect(new URL("/dashboard/client", req.url));
       }
     }
 
@@ -124,14 +109,6 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.jpg$|.*\\.jpeg$|.*\\.gif$|.*\\.svg$|manifest.json).*)",
   ],
 };

@@ -21,6 +21,31 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/).
 - Problème de synchronisation des données en temps réel
 - Bug de calcul TVA dans certains cas spécifiques
 
+## [1.2.1] - 2024-01-20
+
+### 🐛 Corrigé
+- **Erreur critique d'authentification** : "Cannot read properties of undefined (reading 'call')"
+  - Ajout de vérifications de sécurité dans `hooks/useAuth.ts` pour les fonctions `signIn()` et `signOut()`
+  - Protection contre l'appel de fonctions non définies de next-auth/react
+  - Messages d'erreur utilisateur améliorés ("Service d'authentification non disponible")
+- **Page blanche sur dashboard client** 
+  - Conversion du composant client vers composant serveur dans `/dashboard/client/page.tsx`
+  - Suppression du conflit d'hydratation React entre SSR et CSR
+  - Utilisation cohérente de `getServerSession()` pour l'authentification côté serveur
+- **Stabilité de la session utilisateur**
+  - Amélioration de la gestion des erreurs d'authentification
+  - Prévention des boucles de redirection infinies
+
+### 🔒 Sécurité
+- **Validation renforcée** des fonctions d'authentification
+- **Gestion d'erreur robuste** pour éviter les crashes de l'application
+- **Messages d'erreur informatifs** sans exposition d'informations techniques
+
+### ⚡ Performances
+- **Réduction des erreurs JavaScript** côté client
+- **Amélioration du temps de chargement** des pages d'authentification
+- **Optimisation de l'hydratation React** pour les pages protégées
+
 ## [1.2.0] - 2024-01-15
 
 ### 🆕 Ajouté

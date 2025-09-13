@@ -1,16 +1,7 @@
+// app/layout.tsx - Version corrigée
 import type { Metadata, Viewport } from "next";
-// import { Inter } from "next/font/google";
-import { SessionProvider } from "@/components/providers/SessionProvider";
-import { ToastProvider } from "@/components/ui/Toast";
+import Providers from "@/components/providers/Providers";
 import "./globals.css";
-
-// const inter = Inter({ 
-//   subsets: ['latin'],
-//   display: 'swap',
-//   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif']
-// })
-
-// Polices définies dans globals.css pour éviter les problèmes de connectivité avec Google Fonts
 
 export const metadata: Metadata = {
   title: 'ChantierPro - Gestion de chantiers BTP',
@@ -43,11 +34,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body>
-        <SessionProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-        </SessionProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

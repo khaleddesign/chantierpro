@@ -34,13 +34,19 @@ Bienvenue dans la documentation complète de ChantierPro ! Cette section contien
   - Standards de tests
   - Workflow GitHub
 
-### 📝 Historique
+### 📝 Historique & Corrections
 
 - **[CHANGELOG.md](./CHANGELOG.md)** - Historique des versions
   - Évolutions du projet
   - Nouveautés par version
   - Corrections et améliorations
   - Roadmap future
+
+- **[AUTHENTICATION_FIX.md](./AUTHENTICATION_FIX.md)** - Correction Critique v1.2.1
+  - Résolution erreur "Cannot read properties of undefined"
+  - Sécurisation des hooks d'authentification
+  - Correction page blanche dashboard client
+  - Guide de débogage technique
 
 ## 🎯 Démarrage rapide
 
@@ -71,7 +77,8 @@ documentation/
 ├── API_DOCUMENTATION.md         # Documentation API complète
 ├── DEPLOYMENT.md               # Guide de déploiement
 ├── CONTRIBUTING.md             # Guide de contribution
-└── CHANGELOG.md               # Historique des versions
+├── CHANGELOG.md                # Historique des versions
+└── AUTHENTICATION_FIX.md       # Correction authentification v1.2.1
 ```
 
 ## 🔗 Liens utiles

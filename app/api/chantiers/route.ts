@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    // Seuls les admins et commerciaux peuvent créer des chantiers
-    if (!["ADMIN", "COMMERCIAL"].includes(session.user.role)) {
+    // Les admins, commerciaux et clients peuvent créer des chantiers
+    if (!["ADMIN", "COMMERCIAL", "CLIENT"].includes(session.user.role)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
@@ -160,6 +160,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: `Champs obligatoires manquants: ${missingFields.join(', ')}` },
         { status: 400 }
+      );
+    }
+
+    // Pour les clients, ils ne peuvent créer que leurs propres chantiers
+    if (session.user.role === "CLIENT" && clientId !== session.user.id) {
+      return NextResponse.json(
+        { error: "Un client ne peut créer que ses propres chantiers" },
+        { status: 403 }
       );
     }
 

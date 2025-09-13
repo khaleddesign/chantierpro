@@ -10,8 +10,7 @@ interface PlanningDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function PlanningDetailPage({ params }: PlanningDetailPageProps) {
-  const { id } = await params;
+export default function PlanningDetailPage({ params }: PlanningDetailPageProps) {
   const router = useRouter();
   const { success, error: showError } = useToasts();
   
@@ -19,9 +18,20 @@ export default async function PlanningDetailPage({ params }: PlanningDetailPageP
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [id, setId] = useState<string>('');
 
   useEffect(() => {
-    fetchPlanning();
+    const extractId = async () => {
+      const resolvedParams = await params;
+      setId(resolvedParams.id);
+    };
+    extractId();
+  }, [params]);
+
+  useEffect(() => {
+    if (id) {
+      fetchPlanning();
+    }
   }, [id]);
 
   const fetchPlanning = async () => {
