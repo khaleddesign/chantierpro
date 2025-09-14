@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: 'VIEW_PERFORMANCE_METRICS',
       resource: 'performance_metrics',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         action: 'VIEW_PERFORMANCE_METRICS_ERROR',
         resource: 'performance_metrics',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'MEDIUM',
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Paramètres invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
         duration: metricData.duration,
         statusCode: metricData.statusCode,
         userId: session?.user?.id,
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         memoryUsage: metricData.memoryUsage,
         dbQueries: metricData.dbQueries,
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
         action: 'SLOW_PERFORMANCE_DETECTED',
         resource: metricData.endpoint,
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'MEDIUM',
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Données invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 

@@ -15,35 +15,35 @@ describe('Button Component', () => {
     render(<Button>Default Button</Button>)
     const button = screen.getByRole('button')
     
-    expect(button).toHaveClass('bg-primary', 'text-primary-foreground')
+    expect(button).toHaveClass('bg-primary text-primary-foreground')
   })
 
   it('applies destructive variant classes', () => {
     render(<Button variant="destructive">Delete</Button>)
     const button = screen.getByRole('button')
     
-    expect(button).toHaveClass('bg-destructive', 'text-destructive-foreground')
+    expect(button).toHaveClass('bg-destructive text-destructive-foreground')
   })
 
   it('applies outline variant classes', () => {
     render(<Button variant="outline">Outline Button</Button>)
     const button = screen.getByRole('button')
     
-    expect(button).toHaveClass('border', 'border-input', 'bg-background')
+    expect(button).toHaveClass('border border-input bg-background')
   })
 
   it('applies different sizes correctly', () => {
     const { rerender } = render(<Button size="sm">Small</Button>)
     let button = screen.getByRole('button')
-    expect(button).toHaveClass('h-9', 'px-3')
+    expect(button).toHaveClass('h-9 px-3')
 
     rerender(<Button size="lg">Large</Button>)
     button = screen.getByRole('button')
-    expect(button).toHaveClass('h-11', 'px-8')
+    expect(button).toHaveClass('h-11 px-8')
 
     rerender(<Button size="icon">🔥</Button>)
     button = screen.getByRole('button')
-    expect(button).toHaveClass('h-10', 'w-10')
+    expect(button).toHaveClass('h-10 w-10')
   })
 
   it('handles click events correctly', () => {

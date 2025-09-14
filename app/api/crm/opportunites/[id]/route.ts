@@ -34,8 +34,9 @@ const UpdateOpportuniteSchema = z.object({
 // GET - Récupérer une opportunité spécifique
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -46,7 +47,7 @@ export async function GET(
     }
 
     const opportunite = await prisma.opportunite.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         client: {
           select: {
@@ -82,7 +83,7 @@ export async function GET(
     const historique = await prisma.historiqueActionCRM.findMany({
       where: {
         entite: 'opportunite',
-        entiteId: params.id
+        entiteId: id
       },
       orderBy: { createdAt: 'desc' },
       take: 10
@@ -105,8 +106,9 @@ export async function GET(
 // PUT - Mettre à jour une opportunité
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -118,7 +120,7 @@ export async function PUT(
 
     // Vérifier que l'opportunité existe
     const existingOpportunite = await prisma.opportunite.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     if (!existingOpportunite) {
@@ -147,7 +149,7 @@ export async function PUT(
 
     // Mettre à jour l'opportunité
     const opportunite = await prisma.opportunite.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         client: {
@@ -211,7 +213,7 @@ export async function PUT(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Données invalides', details: error.errors },
+        { error: 'Données invalides', details: error.issues },
         { status: 400 }
       );
     }
@@ -227,8 +229,9 @@ export async function PUT(
 // DELETE - Supprimer une opportunité
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -240,7 +243,7 @@ export async function DELETE(
 
     // Vérifier que l'opportunité existe
     const existingOpportunite = await prisma.opportunite.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     if (!existingOpportunite) {
@@ -254,15 +257,15 @@ export async function DELETE(
     await prisma.$transaction([
       // Supprimer les tâches liées
       prisma.tacheCommerciale.deleteMany({
-        where: { opportuniteId: params.id }
+        where: { opportuniteId: id }
       }),
       // Supprimer les relances liées
       prisma.relanceCommerciale.deleteMany({
-        where: { opportuniteId: params.id }
+        where: { opportuniteId: id }
       }),
       // Supprimer l'opportunité
       prisma.opportunite.delete({
-        where: { id: params.id }
+        where: { id: id }
       })
     ]);
 
@@ -271,7 +274,7 @@ export async function DELETE(
       data: {
         action: 'SUPPRESSION_OPPORTUNITE',
         entite: 'opportunite',
-        entiteId: params.id,
+        entiteId: id,
         ancienneValeur: {
           titre: existingOpportunite.titre,
           valeurEstimee: existingOpportunite.valeurEstimee,

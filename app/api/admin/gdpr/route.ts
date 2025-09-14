@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 
       case 'anonymize_user_data':
         const { userId } = z.object({ userId: z.string() }).parse(data);
-        await gdprController.anonymizeUserData(userId);
+        await gdprController.executeAnonymization(userId);
         result = { message: 'Données utilisateur anonymisées' };
         break;
 

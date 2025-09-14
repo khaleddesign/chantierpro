@@ -153,7 +153,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
         prisma.user.groupBy({
           by: ['typeClient'],
           where: { role: 'CLIENT' },
-          _count: true,
+          _count: { _all: true },
           orderBy: { typeClient: 'asc' }
         }),
         prisma.user.aggregate({
@@ -308,7 +308,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           clientId: client.id,
           createdBy: session.user.id,
           type: 'AUTRE',
-          objet: 'Création du client',
+          titre: 'Création du client',
           description: `Client créé via le CRM par ${session.user.name}`,
           dateContact: new Date()
         }

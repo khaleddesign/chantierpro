@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     // Requêtes parallèles
     const [factures, totalCount, statistiques] = await Promise.all([
       // Récupération des factures
-      prisma.facture.findMany({
+      prisma.devis.findMany({
         where: whereClause,
         include: {
           client: {
@@ -129,24 +129,24 @@ export async function GET(request: NextRequest) {
               id: true,
               montant: true,
               datePaiement: true,
-              modePaiement: true
+              methode: true
             }
           }
         },
-        orderBy: { dateEmission: 'desc' },
+        orderBy: { dateCreation: 'desc' },
         skip: (page - 1) * limit,
         take: limit
       }),
 
       // Comptage total
-      prisma.facture.count({ where: whereClause }),
+      prisma.devis.count({ where: whereClause }),
 
       // Statistiques
-      prisma.facture.aggregate({
+      prisma.devis.aggregate({
         where: whereClause,
         _sum: {
-          montantTTC: true,
-          montantPaye: true
+          totalTTC: true,
+          montant: true
         },
         _count: {
           id: true
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
     // Calcul des statistiques détaillées
     const statsDetaillees = await Promise.all([
       // Factures en retard
-      prisma.facture.count({
+      prisma.devis.count({
         where: {
           ...whereClause,
           statut: 'EMISE',
@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Factures du mois
-      prisma.facture.aggregate({
+      prisma.devis.aggregate({
         where: {
           ...whereClause,
           dateEmission: {
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
       }),
       
       // Chiffre d'affaires encaissé
-      prisma.facture.aggregate({
+      prisma.devis.aggregate({
         where: {
           ...whereClause,
           statut: 'PAYEE'
@@ -230,7 +230,7 @@ export async function POST(request: NextRequest) {
     const numeroFacture = await genererNumeroFacture();
 
     // Création de la facture
-    const facture = await prisma.facture.create({
+    const facture = await prisma.devis.create({
       data: {
         numero: numeroFacture,
         clientId: validatedData.clientId,
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Données invalides', details: error.errors },
+        { error: 'Données invalides', details: error.issues },
         { status: 400 }
       );
     }
@@ -325,7 +325,7 @@ async function genererNumeroFacture(): Promise<string> {
   const debutMois = new Date(annee, new Date().getMonth(), 1);
   const finMois = new Date(annee, new Date().getMonth() + 1, 0);
   
-  const nbFacturesMois = await prisma.facture.count({
+  const nbFacturesMois = await prisma.devis.count({
     where: {
       dateEmission: {
         gte: debutMois,
@@ -345,7 +345,7 @@ async function genererPDFFacture(factureId: string): Promise<void> {
   // En production, ici on utiliserait jsPDF, Puppeteer, ou un service externe
   // Pour l'instant, on simule la génération
   
-  await prisma.facture.update({
+  await prisma.devis.update({
     where: { id: factureId },
     data: {
       pdfGenere: true,
@@ -359,7 +359,7 @@ async function envoyerFactureParEmail(factureId: string): Promise<void> {
   console.log(`📧 Envoi email pour facture ${factureId}`);
   
   // En production, utiliser un service d'emailing
-  const facture = await prisma.facture.findUnique({
+  const facture = await prisma.devis.findUnique({
     where: { id: factureId },
     include: { client: true }
   });
@@ -367,7 +367,7 @@ async function envoyerFactureParEmail(factureId: string): Promise<void> {
   if (facture) {
     console.log(`📧 Email envoyé à: ${facture.client.email}`);
     
-    await prisma.facture.update({
+    await prisma.devis.update({
       where: { id: factureId },
       data: {
         emailEnvoye: true,
@@ -410,7 +410,7 @@ export async function PUT(request: NextRequest) {
       try {
         const numeroFacture = await genererNumeroFacture();
         
-        const facture = await prisma.facture.create({
+        const facture = await prisma.devis.create({
           data: {
             numero: numeroFacture,
             clientId: devis.clientId,

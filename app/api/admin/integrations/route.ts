@@ -21,7 +21,7 @@ const integrationSchema = z.object({
   retryAttempts: z.number().min(0).max(10).default(3),
   apiKey: z.string().optional(),
   apiSecret: z.string().optional(),
-  settings: z.record(z.any()).optional()
+  settings: z.record(z.string(), z.any()).optional()
 });
 
 const updateIntegrationSchema = integrationSchema.partial().omit({ type: true, provider: true });
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: 'VIEW_INTEGRATIONS',
       resource: 'integrations',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       action: 'CREATE_INTEGRATION',
       resource: 'integrations',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'MEDIUM',
@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Données invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -228,9 +228,11 @@ export async function POST(request: NextRequest) {
 // PUT /api/admin/integrations/[id] - Mettre à jour une intégration
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
@@ -246,7 +248,7 @@ export async function PUT(
 
     // Vérifier que l'intégration existe
     const existingIntegration = await prisma.integration.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingIntegration) {
@@ -268,16 +270,16 @@ export async function PUT(
 
     // Mise à jour
     const updatedIntegration = await prisma.integration.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData
     });
 
     // Re-initialisation si l'intégration était activée
     if (validatedData.enabled && !existingIntegration.enabled) {
-      await initializeIntegration(params.id);
+      await initializeIntegration(id);
     } else if (!validatedData.enabled && existingIntegration.enabled) {
       // Désenregistrer de l'IntegrationManager
-      integrationManager.get(params.id); // Si elle existe, elle sera remplacée
+      integrationManager.get(id); // Si elle existe, elle sera remplacée
     }
 
     // Log de sécurité
@@ -285,12 +287,12 @@ export async function PUT(
       userId: session.user.id,
       action: 'UPDATE_INTEGRATION',
       resource: 'integrations',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'MEDIUM',
       details: {
-        integrationId: params.id,
+        integrationId: id,
         changes: Object.keys(validatedData)
       }
     });
@@ -316,9 +318,11 @@ export async function PUT(
 // DELETE /api/admin/integrations/[id] - Supprimer une intégration
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
@@ -331,7 +335,7 @@ export async function DELETE(
 
     // Vérifier l'existence
     const integration = await prisma.integration.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!integration) {
@@ -340,7 +344,7 @@ export async function DELETE(
 
     // Suppression (cascade automatique pour logs et sync records)
     await prisma.integration.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     // Log de sécurité
@@ -348,12 +352,12 @@ export async function DELETE(
       userId: session.user.id,
       action: 'DELETE_INTEGRATION',
       resource: 'integrations',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'HIGH',
       details: {
-        integrationId: params.id,
+        integrationId: id,
         name: integration.name,
         type: integration.type
       }

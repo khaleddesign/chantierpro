@@ -10,7 +10,7 @@ const syncRequestSchema = z.object({
   integrationId: z.string().cuid(),
   syncType: z.enum(['CLIENTS', 'FACTURES', 'CHANTIERS', 'CONTACTS', 'DOCUMENTS', 'FULL', 'PARTIAL']),
   direction: z.enum(['IMPORT', 'EXPORT', 'BIDIRECTIONAL']),
-  options: z.record(z.any()).optional()
+  options: z.record(z.string(), z.any()).optional()
 });
 
 // GET /api/admin/integrations/sync - Récupérer l'historique des synchronisations
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       action: 'START_INTEGRATION_SYNC',
       resource: 'integrations',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'MEDIUM',
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Paramètres invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -197,9 +197,11 @@ export async function POST(request: NextRequest) {
 // DELETE /api/admin/integrations/sync/[id] - Annuler une synchronisation
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
@@ -212,7 +214,7 @@ export async function DELETE(
 
     // Vérifier que la sync existe et peut être annulée
     const syncRecord = await prisma.syncRecord.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     if (!syncRecord) {
@@ -229,7 +231,7 @@ export async function DELETE(
 
     // Marquer comme annulée
     await prisma.syncRecord.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         status: 'CANCELLED',
         completedAt: new Date(),
@@ -242,11 +244,11 @@ export async function DELETE(
       userId: session.user.id,
       action: 'CANCEL_INTEGRATION_SYNC',
       resource: 'integrations',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
-      details: { syncRecordId: params.id }
+      details: { syncRecordId: id }
     });
 
     return NextResponse.json({

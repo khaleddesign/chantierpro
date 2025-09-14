@@ -28,8 +28,9 @@ const UpdateInteractionSchema = z.object({
 // GET - Récupérer une interaction spécifique
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -40,7 +41,7 @@ export async function GET(
     }
 
     const interaction = await prisma.interactionClient.findUnique({
-      where: { id: params.id },
+      where: { id: id },
       include: {
         client: {
           select: {
@@ -78,8 +79,9 @@ export async function GET(
 // PUT - Mettre à jour une interaction
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -91,7 +93,7 @@ export async function PUT(
 
     // Vérifier que l'interaction existe
     const existingInteraction = await prisma.interactionClient.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     if (!existingInteraction) {
@@ -119,7 +121,7 @@ export async function PUT(
 
     // Mettre à jour l'interaction
     const interaction = await prisma.interactionClient.update({
-      where: { id: params.id },
+      where: { id: id },
       data: updateData,
       include: {
         client: {
@@ -161,7 +163,7 @@ export async function PUT(
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Données invalides', details: error.errors },
+        { error: 'Données invalides', details: error.issues },
         { status: 400 }
       );
     }
@@ -177,8 +179,9 @@ export async function PUT(
 // DELETE - Supprimer une interaction
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -190,7 +193,7 @@ export async function DELETE(
 
     // Vérifier que l'interaction existe
     const existingInteraction = await prisma.interactionClient.findUnique({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     if (!existingInteraction) {
@@ -202,7 +205,7 @@ export async function DELETE(
 
     // Supprimer l'interaction
     await prisma.interactionClient.delete({
-      where: { id: params.id }
+      where: { id: id }
     });
 
     // Log de l'action dans l'historique CRM
@@ -210,7 +213,7 @@ export async function DELETE(
       data: {
         action: 'SUPPRESSION_INTERACTION',
         entite: 'interaction',
-        entiteId: params.id,
+        entiteId: id,
         ancienneValeur: {
           titre: existingInteraction.titre,
           type: existingInteraction.type,

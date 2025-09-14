@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: `GDPR_VIEW_${action?.toUpperCase()}`,
       resource: 'gdpr',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, ...data } = body;
 
-    const ipAddress = request.ip || 'unknown';
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     let result;
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: 'GDPR_ERROR',
         resource: 'gdpr',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'HIGH',
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Données invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -213,7 +213,7 @@ export async function DELETE(request: NextRequest) {
       userId: session.user.id,
       action: 'GDPR_DELETE_REQUEST',
       resource: 'gdpr',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'CRITICAL',

@@ -6,8 +6,9 @@ import { prisma } from '@/lib/prisma';
 // GET - Récupérer la fiche client complète (360°)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -31,7 +32,7 @@ export async function GET(
       // Données client de base
       prisma.user.findUnique({
         where: { 
-          id: params.id,
+          id: id,
           role: 'CLIENT'
         },
         select: {
@@ -80,7 +81,7 @@ export async function GET(
       
       // Interactions récentes
       prisma.interactionClient.findMany({
-        where: { clientId: params.id },
+        where: { clientId: id },
         orderBy: { dateContact: 'desc' },
         take: 10,
         select: {
@@ -99,7 +100,7 @@ export async function GET(
       
       // Opportunités
       prisma.opportunite.findMany({
-        where: { clientId: params.id },
+        where: { clientId: id },
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -118,7 +119,7 @@ export async function GET(
       // Chantiers
       prisma.chantier.findMany({
         where: { 
-          clientId: params.id,
+          clientId: id,
           deletedAt: null
         },
         orderBy: { createdAt: 'desc' },
@@ -137,7 +138,7 @@ export async function GET(
       
       // Devis
       prisma.devis.findMany({
-        where: { clientId: params.id },
+        where: { clientId: id },
         orderBy: { dateCreation: 'desc' },
         select: {
           id: true,
@@ -156,8 +157,8 @@ export async function GET(
       prisma.document.findMany({
         where: {
           OR: [
-            { uploader: { id: params.id } },
-            { chantier: { clientId: params.id } }
+            { uploader: { id: id } },
+            { chantier: { clientId: id } }
           ]
         },
         orderBy: { createdAt: 'desc' },
@@ -178,9 +179,9 @@ export async function GET(
       prisma.planning.findMany({
         where: {
           OR: [
-            { organisateur: { id: params.id } },
-            { participants: { some: { id: params.id } } },
-            { chantier: { clientId: params.id } }
+            { organisateur: { id: id } },
+            { participants: { some: { id: id } } },
+            { chantier: { clientId: id } }
           ],
           dateDebut: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Derniers 30 jours
         },
@@ -205,13 +206,13 @@ export async function GET(
           OR: [
             { 
               entite: 'client',
-              entiteId: params.id
+              entiteId: id
             },
             {
               entite: 'interaction',
               entiteId: {
                 in: await prisma.interactionClient.findMany({
-                  where: { clientId: params.id },
+                  where: { clientId: id },
                   select: { id: true }
                 }).then(interactions => interactions.map(i => i.id))
               }
@@ -220,7 +221,7 @@ export async function GET(
               entite: 'opportunite',
               entiteId: {
                 in: await prisma.opportunite.findMany({
-                  where: { clientId: params.id },
+                  where: { clientId: id },
                   select: { id: true }
                 }).then(opportunites => opportunites.map(o => o.id))
               }
@@ -284,7 +285,7 @@ export async function GET(
     };
 
     // Récupérer les prochaines échéances
-    const prochainesEcheances = await getProchainesEcheances(params.id);
+    const prochainesEcheances = await getProchainesEcheances(id);
 
     return NextResponse.json({
       client,

@@ -1,9 +1,11 @@
 // Cache principal
 export { RedisCache, cache } from './redis-cache';
 export type { CacheOptions } from './redis-cache';
+import { RedisCache } from './redis-cache';
 
 // Cache spécialisé pour l'application
 export { ApplicationCache, appCache } from './application-cache';
+import { ApplicationCache } from './application-cache';
 
 // Middleware de cache pour les API
 export {

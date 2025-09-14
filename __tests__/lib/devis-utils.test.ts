@@ -72,8 +72,8 @@ describe('lib/devis-utils', () => {
           designation: 'Item 1',
           quantite: 1,
           prixUnitaire: 100,
-          total: 100
-          // tauxTVA not specified, should default to 20%
+          total: 100,
+          tauxTVA: 20
         }
       ]
 

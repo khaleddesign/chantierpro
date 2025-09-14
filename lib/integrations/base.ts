@@ -132,7 +132,7 @@ export abstract class BaseIntegration {
       await this.updateRateLimit();
 
       // Parsing de la réponse
-      let responseData: T | null = null;
+      let responseData: T | undefined = undefined;
       const contentType = response.headers.get('content-type');
       
       if (contentType?.includes('application/json')) {
@@ -162,7 +162,7 @@ export abstract class BaseIntegration {
 
       return {
         success: response.ok,
-        data: responseData,
+        data: responseData || undefined,
         statusCode: response.status,
         rateLimitRemaining: parseInt(response.headers.get('x-ratelimit-remaining') || '0'),
         rateLimitReset: response.headers.get('x-ratelimit-reset') 

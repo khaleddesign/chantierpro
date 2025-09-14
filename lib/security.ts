@@ -187,20 +187,26 @@ export class DataEncryption {
 
   static encrypt(text: string): { encrypted: string; iv: string; tag: string } {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher(this.ALGORITHM, this.KEY);
+    const key = crypto.scryptSync(this.KEY, 'salt', 32);
+    const cipher = crypto.createCipheriv(this.ALGORITHM, key, iv);
     
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
+    const tag = cipher.getAuthTag();
     
     return {
       encrypted,
       iv: iv.toString('hex'),
-      tag: 'placeholder' // En production, utiliser cipher.getAuthTag()
+      tag: tag.toString('hex')
     };
   }
 
   static decrypt(encryptedData: { encrypted: string; iv: string; tag: string }): string {
-    const decipher = crypto.createDecipher(this.ALGORITHM, this.KEY);
+    const iv = Buffer.from(encryptedData.iv, 'hex');
+    const tag = Buffer.from(encryptedData.tag, 'hex');
+    const key = crypto.scryptSync(this.KEY, 'salt', 32);
+    const decipher = crypto.createDecipheriv(this.ALGORITHM, key, iv);
+    decipher.setAuthTag(tag);
     
     let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
@@ -282,7 +288,7 @@ export async function securityMiddleware(
   action?: string,
   resource?: string
 ): Promise<{ allowed: boolean; reason?: string }> {
-  const clientIP = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
+  const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   // 1. Rate limiting

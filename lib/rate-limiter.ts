@@ -47,10 +47,10 @@ export async function getRateLimit(
         const resetTime = now + config.windowMs;
         const ttlSeconds = Math.ceil(config.windowMs / 1000);
         
-        await redis.pipeline()
-          .hset(key, { count: '1', resetTime: resetTime.toString() })
-          .expire(key, ttlSeconds)
-          .exec();
+        const pipeline = redis.pipeline();
+        pipeline.hset(key, { count: '1', resetTime: resetTime.toString() });
+        pipeline.expire(key, ttlSeconds);
+        await pipeline.exec();
         
         return {
           allowed: true,

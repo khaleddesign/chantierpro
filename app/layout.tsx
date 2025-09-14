@@ -1,7 +1,6 @@
-// app/layout.tsx - Version corrigée
-import type { Metadata, Viewport } from "next";
-import Providers from "@/components/providers/Providers";
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
+import { Providers } from "@/components/providers/Providers";
 
 export const metadata: Metadata = {
   title: 'ChantierPro - Gestion de chantiers BTP',

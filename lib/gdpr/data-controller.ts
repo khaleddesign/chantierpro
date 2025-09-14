@@ -555,7 +555,7 @@ export class GDPRDataController {
     return await this.collectUserData(userId);
   }
 
-  async anonymizeUserData(userId: string) {
+  async executeAnonymization(userId: string): Promise<void> {
     return await this.anonymizeUserData(userId);
   }
 }

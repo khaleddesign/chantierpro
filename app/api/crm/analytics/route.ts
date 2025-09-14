@@ -319,8 +319,9 @@ export async function GET(request: NextRequest) {
 
     // Satisfaction client (moyenne des notes dans les interactions)
     const notesInteractions = interactions
-      .filter(i => i.satisfaction && i.satisfaction > 0)
-      .map(i => i.satisfaction!);
+      .filter(i => i.satisfaction && parseInt(i.satisfaction as string, 10) > 0)
+      .map(i => parseInt(i.satisfaction as string, 10))
+      .filter(note => !isNaN(note));
     const satisfactionClient = notesInteractions.length > 0
       ? notesInteractions.reduce((sum, note) => sum + note, 0) / notesInteractions.length
       : 4.5;

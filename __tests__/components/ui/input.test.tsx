@@ -38,7 +38,7 @@ describe('Input Component', () => {
     const input = screen.getByPlaceholderText('Disabled input')
     
     expect(input).toBeDisabled()
-    expect(input).toHaveClass('disabled:cursor-not-allowed', 'disabled:opacity-50')
+    expect(input).toHaveClass('disabled:cursor-not-allowed disabled:opacity-50')
   })
 
   it('forwards ref correctly', () => {
@@ -55,7 +55,7 @@ describe('Input Component', () => {
     
     expect(input).toHaveClass('custom-class')
     // Should also have base classes
-    expect(input).toHaveClass('flex', 'h-10', 'w-full', 'rounded-md')
+    expect(input).toHaveClass('flex h-10 w-full rounded-md')
   })
 
   it('handles controlled input correctly', async () => {

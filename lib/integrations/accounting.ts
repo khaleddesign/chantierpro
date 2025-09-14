@@ -1,5 +1,6 @@
 import { BaseIntegration, IntegrationConfig, IntegrationResponse } from './base';
 import { prisma } from '@/lib/prisma';
+import { cache } from '@/lib/cache';
 
 /**
  * Interface pour les données comptables standardisées
@@ -59,6 +60,8 @@ export interface ComptaLigneEcriture {
  * Intégration comptabilité française
  */
 export class ComptabiliteIntegration extends BaseIntegration {
+  protected cache = cache;
+
   constructor(config: IntegrationConfig) {
     super({
       rateLimitRequests: 50,
@@ -132,7 +135,7 @@ export class ComptabiliteIntegration extends BaseIntegration {
           codePostal: client.codePostal || '',
           ville: client.ville || '',
           siret: client.siret || undefined,
-          numeroTVA: this.generateNumeroTVA(client.siret),
+          numeroTVA: this.generateNumeroTVA(client.siret || undefined),
           modeReglement: 'VIREMENT',
           delaiReglement: 30
         };

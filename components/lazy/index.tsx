@@ -1,4 +1,18 @@
-import React from 'react';
+import React, { Suspense, lazy, ComponentType } from 'react';
+
+// Utility function pour créer des composants lazy avec fallback
+export function createLazyComponent<T = {}>(
+  importFn: () => Promise<{ default: ComponentType<T> }>,
+  FallbackComponent: ComponentType = () => <div>Loading...</div>
+) {
+  const LazyComponent = lazy(importFn);
+
+  return (props: T) => (
+    <Suspense fallback={<FallbackComponent />}>
+      <LazyComponent {...props} />
+    </Suspense>
+  );
+}
 
 // Composants de planning lazy-loaded
 export { default as LazyGanttChart } from '../planning/LazyGanttChart';

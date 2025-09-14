@@ -36,7 +36,7 @@ export class AdvancedCache {
         this.memoryCache.set(key, {
           value: dbEntry.value,
           expiresAt: dbEntry.expiresAt?.getTime() || Date.now() + this.DEFAULT_TTL,
-          tags: Array.isArray(dbEntry.tags) ? dbEntry.tags : []
+          tags: Array.isArray(dbEntry.tags) ? (dbEntry.tags as string[]) : []
         });
         return dbEntry.value as T;
       }

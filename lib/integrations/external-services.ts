@@ -16,6 +16,12 @@ export class MappingIntegration extends BaseIntegration {
   }
 
   async testConnection(): Promise<IntegrationResponse<boolean>> {
+    if (!this.config.apiKey) {
+      return {
+        success: false,
+        error: 'API key is required for mapping integration'
+      };
+    }
     return await this.makeRequest('GET', '/geocoding/v5/mapbox.places/test.json', undefined, {
       headers: { 'access_token': this.config.apiKey }
     });
@@ -36,18 +42,32 @@ export class MappingIntegration extends BaseIntegration {
   }>> {
     try {
       const encodedAddress = encodeURIComponent(address);
+      if (!this.config.apiKey) {
+        return {
+          success: false,
+          error: 'API key is required for geocoding'
+        };
+      }
       const response = await this.makeRequest('GET', 
         `/geocoding/v5/mapbox.places/${encodedAddress}.json?country=FR&language=fr&access_token=${this.config.apiKey}`
       );
 
-      if (!response.success || !response.data?.features?.length) {
+      if (!response.success || !response.data) {
         return {
           success: false,
           error: 'Adresse non trouvée'
         };
       }
 
-      const feature = response.data.features[0];
+      const data = response.data as { features?: Array<{ center: [number, number]; place_name: string; relevance: number }> };
+      if (!data.features?.length) {
+        return {
+          success: false,
+          error: 'Adresse non trouvée'
+        };
+      }
+
+      const feature = data.features[0];
       
       return {
         success: true,
@@ -78,18 +98,32 @@ export class MappingIntegration extends BaseIntegration {
   }>> {
     try {
       const coords = `${origin[0]},${origin[1]};${destination[0]},${destination[1]}`;
+      if (!this.config.apiKey) {
+        return {
+          success: false,
+          error: 'API key is required for route calculation'
+        };
+      }
       const response = await this.makeRequest('GET',
         `/directions/v5/mapbox/driving/${coords}?geometries=geojson&access_token=${this.config.apiKey}`
       );
 
-      if (!response.success || !response.data?.routes?.length) {
+      if (!response.success || !response.data) {
         return {
           success: false,
           error: 'Itinéraire non calculable'
         };
       }
 
-      const route = response.data.routes[0];
+      const data = response.data as { routes?: Array<{ distance: number; duration: number; geometry: any }> };
+      if (!data.routes?.length) {
+        return {
+          success: false,
+          error: 'Itinéraire non calculable'
+        };
+      }
+
+      const route = data.routes[0];
 
       return {
         success: true,
@@ -123,6 +157,12 @@ export class WeatherIntegration extends BaseIntegration {
   }
 
   async testConnection(): Promise<IntegrationResponse<boolean>> {
+    if (!this.config.apiKey) {
+      return {
+        success: false,
+        error: 'API key is required for weather integration'
+      };
+    }
     return await this.makeRequest('GET', '/weather?q=Paris,FR&appid=' + this.config.apiKey);
   }
 
@@ -144,6 +184,12 @@ export class WeatherIntegration extends BaseIntegration {
     workingConditions: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'DANGEROUS';
   }>> {
     try {
+      if (!this.config.apiKey) {
+        return {
+          success: false,
+          error: 'API key is required for weather data'
+        };
+      }
       const response = await this.makeRequest('GET',
         `/weather?lat=${lat}&lon=${lon}&appid=${this.config.apiKey}&units=metric&lang=fr`
       );
@@ -155,8 +201,15 @@ export class WeatherIntegration extends BaseIntegration {
         };
       }
 
-      const data = response.data;
-      const workingConditions = this.assessWorkingConditions(data);
+      const data = response.data as {
+        main: { temp: number; humidity: number };
+        weather: Array<{ description: string }>;
+        wind?: { speed: number };
+        rain?: { '1h': number };
+        snow?: { '1h': number };
+        visibility?: number;
+      };
+      const workingConditions = this.assessWorkingConditions(data) as 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR' | 'DANGEROUS';
 
       return {
         success: true,
@@ -189,6 +242,12 @@ export class WeatherIntegration extends BaseIntegration {
     workingConditions: string;
   }>>> {
     try {
+      if (!this.config.apiKey) {
+        return {
+          success: false,
+          error: 'API key is required for weather forecast'
+        };
+      }
       const response = await this.makeRequest('GET',
         `/forecast?lat=${lat}&lon=${lon}&appid=${this.config.apiKey}&units=metric&lang=fr`
       );
@@ -200,8 +259,9 @@ export class WeatherIntegration extends BaseIntegration {
         };
       }
 
+      const data = response.data as { list: any[] };
       // Regroupement par jour
-      const dailyData = this.groupForecastByDay(response.data.list);
+      const dailyData = this.groupForecastByDay(data.list);
 
       return {
         success: true,
@@ -323,7 +383,7 @@ export class CommunicationIntegration extends BaseIntegration {
 
       return {
         success: response.success,
-        data: response.data,
+        data: response.data as { messageId: string } | undefined,
         error: response.error
       };
     } catch (error) {
@@ -355,7 +415,7 @@ export class CommunicationIntegration extends BaseIntegration {
 
       return {
         success: response.success,
-        data: response.data,
+        data: response.data as { messageId: string } | undefined,
         error: response.error
       };
     } catch (error) {
@@ -391,7 +451,7 @@ export class CommunicationIntegration extends BaseIntegration {
 
       return {
         success: response.success,
-        data: response.data,
+        data: response.data as { imported: number; updated: number } | undefined,
         error: response.error
       };
     } catch (error) {
@@ -454,21 +514,33 @@ export class CloudStorageIntegration extends BaseIntegration {
       });
 
       if (!response.success) {
-        return response;
+        return {
+          success: false,
+          error: response.error || 'Upload failed'
+        };
       }
+
+      const uploadData = response.data as {
+        id: string;
+        name: string;
+        size: number;
+        path_display: string;
+      };
 
       // Créer un lien de partage
       const shareResponse = await this.makeRequest('POST', '/sharing/create_shared_link_with_settings', {
-        path: response.data.path_display
+        path: uploadData.path_display
       });
+
+      const shareData = shareResponse.data as { url: string } | undefined;
 
       return {
         success: true,
         data: {
-          id: response.data.id,
-          name: response.data.name,
-          size: response.data.size,
-          url: shareResponse.success ? shareResponse.data.url : ''
+          id: uploadData.id,
+          name: uploadData.name,
+          size: uploadData.size,
+          url: shareResponse.success && shareData ? shareData.url : ''
         }
       };
     } catch (error) {
@@ -514,11 +586,13 @@ export class CloudStorageIntegration extends BaseIntegration {
         }
       });
 
+      const shareData = shareResponse.data as { url: string } | undefined;
+
       return {
         success: true,
         data: {
           path: folderPath,
-          url: shareResponse.success ? shareResponse.data.url : ''
+          url: shareResponse.success && shareData ? shareData.url : ''
         }
       };
     } catch (error) {
@@ -603,14 +677,22 @@ export class ESignatureIntegration extends BaseIntegration {
       );
 
       if (!response.success) {
-        return response;
+        return {
+          success: false,
+          error: response.error || 'Failed to send document for signature'
+        };
       }
+
+      const envelopeData = response.data as {
+        envelopeId: string;
+        status: string;
+      };
 
       // Récupérer l'URL de signature
       const viewResponse = await this.makeRequest('POST',
-        `/accounts/${this.config.settings?.accountId}/envelopes/${response.data.envelopeId}/views/recipient`,
+        `/accounts/${this.config.settings?.accountId}/envelopes/${envelopeData.envelopeId}/views/recipient`,
         {
-          returnUrl: `${this.config.settings?.returnUrl}?envelopeId=${response.data.envelopeId}`,
+          returnUrl: `${this.config.settings?.returnUrl}?envelopeId=${envelopeData.envelopeId}`,
           authenticationMethod: 'email',
           email: params.signerEmail,
           userName: params.signerName,
@@ -618,12 +700,14 @@ export class ESignatureIntegration extends BaseIntegration {
         }
       );
 
+      const viewData = viewResponse.data as { url: string } | undefined;
+
       return {
         success: true,
         data: {
-          envelopeId: response.data.envelopeId,
-          signingUrl: viewResponse.success ? viewResponse.data.url : '',
-          status: response.data.status
+          envelopeId: envelopeData.envelopeId,
+          signingUrl: viewResponse.success && viewData ? viewData.url : '',
+          status: envelopeData.status
         }
       };
     } catch (error) {

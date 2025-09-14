@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         action: 'VIEW_SECURITY_LOGS_CACHED',
         resource: 'security_logs',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: true,
         riskLevel: 'LOW',
@@ -73,28 +73,17 @@ export async function GET(request: NextRequest) {
     const timeWindow = new Date(Date.now() - timeframes[params.timeframe]);
 
     // Construction des filtres
-    const where: any = {
+    const baseWhere = {
       timestamp: { gte: timeWindow }
     };
 
-    if (params.riskLevel) {
-      where.riskLevel = params.riskLevel;
-    }
-
-    if (params.action) {
-      where.action = { contains: params.action };
-    }
-
-    if (params.userId) {
-      where.userId = params.userId;
-    }
-
-    if (params.ipAddress) {
-      where.ipAddress = { contains: params.ipAddress };
-    }
-
-    if (params.onlyFailures) {
-      where.success = false;
+    const where = {
+      ...baseWhere,
+      ...(params.riskLevel && { riskLevel: params.riskLevel }),
+      ...(params.action && { action: { contains: params.action } }),
+      ...(params.userId && { userId: params.userId }),
+      ...(params.ipAddress && { ipAddress: { contains: params.ipAddress } }),
+      ...(params.onlyFailures && { success: false })
     }
 
     // Récupération des logs et statistiques
@@ -119,7 +108,7 @@ export async function GET(request: NextRequest) {
       prisma.securityLog.groupBy({
         by: ['riskLevel'],
         where: {
-          ...where,
+          timestamp: baseWhere.timestamp,
           riskLevel: { in: ['HIGH', 'CRITICAL'] }
         },
         _count: { _all: true },
@@ -129,7 +118,7 @@ export async function GET(request: NextRequest) {
       // Répartition par niveau de risque
       prisma.securityLog.groupBy({
         by: ['riskLevel'],
-        where,
+        where: baseWhere,
         _count: { _all: true }
       }),
 
@@ -137,7 +126,7 @@ export async function GET(request: NextRequest) {
       prisma.securityLog.groupBy({
         by: ['action'],
         where: {
-          ...where,
+          timestamp: baseWhere.timestamp,
           success: false
         },
         _count: { _all: true },
@@ -242,7 +231,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: 'VIEW_SECURITY_LOGS',
       resource: 'security_logs',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -265,7 +254,7 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         action: 'VIEW_SECURITY_LOGS_ERROR',
         resource: 'security_logs',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'MEDIUM',
@@ -276,7 +265,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Paramètres invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -325,7 +314,7 @@ export async function DELETE(request: NextRequest) {
       userId: session.user.id,
       action: 'CLEANUP_SECURITY_LOGS',
       resource: 'security_logs',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'MEDIUM',

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { PeriodType } from '@prisma/client';
 import { checkPermission, logSecurityEvent } from '@/lib/security';
 import { biEngine } from '@/lib/analytics/business-intelligence';
 import { z } from 'zod';
@@ -108,7 +109,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       action: 'ACCESS_BI_ANALYTICS',
       resource: 'business_intelligence',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -144,7 +145,7 @@ export async function GET(request: NextRequest) {
         userId: session.user.id,
         action: 'BI_ANALYTICS_ERROR',
         resource: 'business_intelligence',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',
         success: false,
         riskLevel: 'MEDIUM',
@@ -155,7 +156,7 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Paramètres invalides',
-        details: error.errors
+        details: error.issues
       }, { status: 400 });
     }
 
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       action: `BI_ACTION_${action.toUpperCase()}`,
       resource: 'business_intelligence',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       success: true,
       riskLevel: 'LOW',
@@ -239,7 +240,13 @@ async function calculateMetricSnapshot(params: {
   periodType: string;
 }) {
   try {
-    const { metric, category, period, periodType } = params;
+    const { metric, category, period, periodType: periodTypeStr } = params;
+
+    // Validate and convert periodType string to PeriodType enum
+    if (!Object.values(PeriodType).includes(periodTypeStr as PeriodType)) {
+      throw new Error(`Invalid period type: ${periodTypeStr}`);
+    }
+    const periodType = periodTypeStr as PeriodType;
 
     // Récupérer la valeur précédente pour calcul d'évolution
     const previousSnapshot = await prisma.bIMetricSnapshot.findFirst({

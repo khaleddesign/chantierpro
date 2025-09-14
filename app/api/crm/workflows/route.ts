@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { EvenementWorkflow } from '@prisma/client';
 import { z } from 'zod';
 
 // Schema pour créer une règle d'automatisation
@@ -23,7 +24,7 @@ const WorkflowRuleSchema = z.object({
   // Actions
   actions: z.array(z.object({
     type: z.enum(['CREER_TACHE', 'ENVOYER_EMAIL', 'PROGRAMMER_RAPPEL', 'CHANGER_PRIORITE', 'ASSIGNER_COMMERCIAL']),
-    parametres: z.record(z.any())
+    parametres: z.record(z.string(), z.any())
   }))
 });
 
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Données invalides', details: error.errors },
+        { error: 'Données invalides', details: error.issues },
         { status: 400 }
       );
     }
@@ -119,10 +120,16 @@ export async function executeWorkflows(evenement: string, contexte: any) {
   try {
     console.log(`🤖 Exécution des workflows pour l'événement: ${evenement}`, contexte);
 
+    // Validate and convert evenement string to EvenementWorkflow enum
+    if (!Object.values(EvenementWorkflow).includes(evenement as EvenementWorkflow)) {
+      throw new Error(`Invalid evenement type: ${evenement}`);
+    }
+    const validEvenement = evenement as EvenementWorkflow;
+
     // Récupérer les règles actives pour cet événement
     const regles = await prisma.workflowRule.findMany({
       where: {
-        evenement,
+        evenement: validEvenement,
         actif: true
       }
     });
@@ -143,7 +150,7 @@ export async function executeWorkflows(evenement: string, contexte: any) {
         const execution = await prisma.workflowExecution.create({
           data: {
             workflowRuleId: regle.id,
-            evenement,
+            evenement: validEvenement,
             contexte,
             status: 'EN_COURS'
           }
@@ -151,9 +158,11 @@ export async function executeWorkflows(evenement: string, contexte: any) {
 
         // Exécuter les actions
         const resultats = [];
-        for (const action of regle.actions) {
-          const resultat = await executerAction(action, contexte);
-          resultats.push(resultat);
+        if (Array.isArray(regle.actions)) {
+          for (const action of regle.actions) {
+            const resultat = await executerAction(action, contexte);
+            resultats.push(resultat);
+          }
         }
 
         // Mettre à jour le statut d'exécution
@@ -213,7 +222,7 @@ function verifierConditions(conditions: any, contexte: any): boolean {
         const joursDepuisCreation = Math.floor(
           (Date.now() - new Date(contexte.dateCreation).getTime()) / (1000 * 60 * 60 * 24)
         );
-        if (joursDepuisCreation < valeur) return false;
+        if (joursDepuisCreation < Number(valeur)) return false;
         break;
       case 'priorite':
         if (contexte.priorite !== valeur) return false;
@@ -262,8 +271,7 @@ async function creerTache(parametres: any, contexte: any) {
       priorite: parametres.priorite || 'NORMALE',
       assigneTo: contexte.userId || parametres.assigneTo,
       createdBy: contexte.userId || 'system',
-      opportuniteId: contexte.opportuniteId,
-      clientId: contexte.clientId
+      opportuniteId: contexte.opportuniteId
     }
   });
 
@@ -291,16 +299,15 @@ async function programmerRappel(parametres: any, contexte: any) {
   const rappel = await prisma.relanceCommerciale.create({
     data: {
       opportuniteId: contexte.opportuniteId,
-      clientId: contexte.clientId,
-      typeRelance: parametres.type || 'EMAIL',
+      type: parametres.type || 'EMAIL',
       dateRelance: new Date(Date.now() + (parametres.delaiJours || 3) * 24 * 60 * 60 * 1000),
-      statut: 'PROGRAMMEE',
-      commentaire: parametres.message || 'Relance automatique programmée',
+      objet: parametres.objet || 'Relance automatique',
+      message: parametres.message || 'Relance automatique programmée',
       createdBy: contexte.userId || 'system'
     }
   });
 
-  console.log(`⏰ Rappel programmé: ${rappel.typeRelance}`);
+  console.log(`⏰ Rappel programmé: ${rappel.type}`);
   return { type: 'rappel', id: rappel.id };
 }
 

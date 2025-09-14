@@ -12,10 +12,10 @@ const nextConfig = {
     domains: ['images.unsplash.com', 'localhost'],
   },
   typescript: {
-    ignoreBuildErrors: process.env.NODE_ENV !== 'production',
+    ignoreBuildErrors: false, // 🔴 Configuration stricte - révéler tous les warnings
   },
   eslint: {
-    ignoreDuringBuilds: process.env.NODE_ENV !== 'production',
+    ignoreDuringBuilds: false, // 🔴 Configuration stricte - ne plus ignorer ESLint
   },
   // Optimisations de cache
   experimental: {
