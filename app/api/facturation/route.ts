@@ -110,13 +110,6 @@ export async function GET(request: NextRequest) {
               address: true
             }
           },
-          devis: {
-            select: {
-              id: true,
-              numero: true,
-              objet: true
-            }
-          },
           chantier: {
             select: {
               id: true,
@@ -173,7 +166,7 @@ export async function GET(request: NextRequest) {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         },
-        _sum: { montantTTC: true },
+        _sum: { totalTTC: true },
         _count: { id: true }
       }),
       
@@ -183,7 +176,7 @@ export async function GET(request: NextRequest) {
           ...whereClause,
           statut: 'PAYEE'
         },
-        _sum: { montantTTC: true }
+        _sum: { totalTTC: true }
       })
     ]);
 
@@ -199,13 +192,13 @@ export async function GET(request: NextRequest) {
       },
       statistiques: {
         total: statistiques._count.id,
-        montantTotal: statistiques._sum.montantTTC || 0,
-        montantPaye: statistiques._sum.montantPaye || 0,
-        montantImpaye: (statistiques._sum.montantTTC || 0) - (statistiques._sum.montantPaye || 0),
+        montantTotal: statistiques._sum.totalTTC || 0,
+        montantPaye: statistiques._sum.montant || 0,
+        montantImpaye: (statistiques._sum.totalTTC || 0) - (statistiques._sum.montant || 0),
         facturesRetard,
         facturesMois: facturesMois._count.id,
-        caMois: facturesMois._sum.montantTTC || 0,
-        caEncaisse: caEncaisse._sum.montantTTC || 0
+        caMois: facturesMois._sum.totalTTC || 0,
+        caEncaisse: caEncaisse._sum.totalTTC || 0
       }
     });
 
@@ -391,9 +384,7 @@ export async function PUT(request: NextRequest) {
     const devisAcceptes = await prisma.devis.findMany({
       where: {
         statut: 'ACCEPTE',
-        factures: {
-          none: {}
-        }
+        type: { not: 'FACTURE' }
       },
       include: {
         client: true,

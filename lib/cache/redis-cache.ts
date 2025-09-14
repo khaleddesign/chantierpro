@@ -1,5 +1,4 @@
-import redisClient from '@/lib/redis';
-
+// TEMPORARY: Simplified cache for stabilization
 export interface CacheOptions {
   ttl?: number; // Time to live en secondes
   namespace?: string;
@@ -10,8 +9,9 @@ export interface CacheOptions {
 export class RedisCache {
   private defaultTTL = 3600; // 1 heure par défaut
   private defaultNamespace = 'chantierpro';
+  private memoryCache = new Map<string, { value: any; expiry: number }>();
 
-  constructor(private client = redisClient) {}
+  constructor(private client: any = null) {}
 
   private buildKey(key: string, namespace?: string): string {
     const ns = namespace || this.defaultNamespace;

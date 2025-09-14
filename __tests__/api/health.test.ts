@@ -19,8 +19,7 @@ describe('/api/health', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Reset environment variables
-    delete process.env.NODE_ENV
-    delete process.env.npm_package_version
+    process.env = { ...process.env, NODE_ENV: 'test' }
   })
 
   it('should return 200 and health status when database is connected', async () => {
@@ -62,8 +61,7 @@ describe('/api/health', () => {
   })
 
   it('should include environment information when available', async () => {
-    process.env.NODE_ENV = 'test'
-    process.env.npm_package_version = '1.0.0'
+    process.env = { ...process.env, NODE_ENV: 'test', npm_package_version: '1.0.0' }
     
     mockQueryRaw.mockResolvedValue([{ '1': 1 }])
 

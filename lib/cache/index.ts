@@ -1,7 +1,7 @@
-// Cache principal
-export { RedisCache, cache } from './redis-cache';
-export type { CacheOptions } from './redis-cache';
-import { RedisCache } from './redis-cache';
+// Cache principal - TEMPORARY: Using memory cache for stabilization
+export { RedisCache, cache } from './temp-cache';
+export type { CacheOptions } from './temp-cache';
+import { RedisCache } from './temp-cache';
 
 // Cache spécialisé pour l'application
 export { ApplicationCache, appCache } from './application-cache';

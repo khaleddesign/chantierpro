@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export function LoginForm() {
-  const { login, isLoading: authLoading, error, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "",
@@ -21,13 +21,9 @@ export function LoginForm() {
     setHasMounted(true);
   }, []);
 
-  // Utilisez un état local pour éviter les problèmes d'hydratation
-  const isLoading = hasMounted ? (authLoading || isSubmitting) : false;
-  const shouldDisable = hasMounted && isLoading;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    clearError();
+    setError(null);
 
     if (!credentials.email || !credentials.password) {
       return;
@@ -35,7 +31,20 @@ export function LoginForm() {
 
     setIsSubmitting(true);
     try {
-      await login(credentials.email, credentials.password);
+      const result = await signIn('credentials', {
+        email: credentials.email,
+        password: credentials.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError('Identifiants invalides');
+      } else if (result?.ok) {
+        window.location.href = '/dashboard';
+      }
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
+      setError('Erreur de connexion');
     } finally {
       setIsSubmitting(false);
     }
@@ -44,7 +53,7 @@ export function LoginForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCredentials(prev => ({ ...prev, [name]: value }));
-    if (error) clearError();
+    if (error) setError(null);
   };
 
   return (
@@ -86,7 +95,7 @@ export function LoginForm() {
                 onChange={handleChange}
                 placeholder="votre.email@exemple.com"
                 className="mt-1 block w-full"
-{...(shouldDisable && { disabled: true })}
+                disabled={isSubmitting}
               />
             </div>
 
@@ -104,13 +113,13 @@ export function LoginForm() {
                   onChange={handleChange}
                   placeholder="Votre mot de passe"
                   className="block w-full pr-10"
-  {...(shouldDisable && { disabled: true })}
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-  {...(shouldDisable && { disabled: true })}
+                  disabled={isSubmitting}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-gray-400" />
@@ -124,9 +133,9 @@ export function LoginForm() {
             <Button
               type="submit"
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200"
-              {...(shouldDisable || !credentials.email || !credentials.password ? { disabled: true } : {})}
+              disabled={isSubmitting || !credentials.email || !credentials.password}
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   Connexion...
