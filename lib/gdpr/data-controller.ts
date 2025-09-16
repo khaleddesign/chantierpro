@@ -25,7 +25,7 @@ export interface GDPRConsent {
 export class GDPRDataController {
   private static instance: GDPRDataController;
 
-  private constructor() {}
+  public constructor() {}
 
   static getInstance(): GDPRDataController {
     if (!this.instance) {
@@ -240,7 +240,7 @@ export class GDPRDataController {
   /**
    * Anonymisation des données d'un utilisateur
    */
-  private async anonymizeUserData(userId: string): Promise<void> {
+  public async anonymizeUserData(userId: string): Promise<void> {
     try {
       const timestamp = new Date();
       const anonymizedEmail = `deleted_${timestamp.getTime()}@anonymized.local`;

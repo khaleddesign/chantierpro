@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { executeWorkflows } from '../route';
+import { executeWorkflows } from '@/lib/services/workflow-service';
 
 // GET - Endpoint pour exécuter les workflows périodiques (peut être appelé par un cron job)
 export async function GET(request: NextRequest) {

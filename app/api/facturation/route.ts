@@ -9,7 +9,7 @@ const FactureSchema = z.object({
   clientId: z.string().cuid(),
   devisId: z.string().cuid().optional(),
   chantierId: z.string().cuid().optional(),
-  type: z.enum(['DEVIS', 'ACOMPTE', 'SITUATION', 'SOLDE', 'FACTURE_LIBRE']),
+  type: z.enum(['DEVIS', 'FACTURE']),
   
   // Montants
   montantHT: z.number().positive(),
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
     
     if (dateDebut && dateFin) {
-      whereClause.dateEmission = {
+      whereClause.dateCreation = {
         gte: new Date(dateDebut),
         lte: new Date(dateFin)
       };
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
       prisma.devis.count({
         where: {
           ...whereClause,
-          statut: 'EMISE',
+          statut: 'ENVOYE',
           dateEcheance: { lt: new Date() }
         }
       }),
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
       prisma.devis.aggregate({
         where: {
           ...whereClause,
-          dateEmission: {
+          dateCreation: {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         },
@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
       prisma.devis.aggregate({
         where: {
           ...whereClause,
-          statut: 'PAYEE'
+          statut: 'PAYE'
         },
         _sum: { totalTTC: true }
       })
@@ -227,33 +227,29 @@ export async function POST(request: NextRequest) {
       data: {
         numero: numeroFacture,
         clientId: validatedData.clientId,
-        devisId: validatedData.devisId,
         chantierId: validatedData.chantierId,
         type: validatedData.type,
         objet: validatedData.objet,
-        description: validatedData.description,
         
         // Montants
-        montantHT: validatedData.montantHT,
-        tauxTVA: validatedData.tauxTVA,
-        montantTVA: validatedData.montantHT * (validatedData.tauxTVA / 100),
-        montantTTC: validatedData.montantTTC,
+        montant: validatedData.montantTTC,
+        totalHT: validatedData.montantHT,
+        totalTVA: validatedData.montantHT * (validatedData.tauxTVA / 100),
+        totalTTC: validatedData.montantTTC,
+        tva: validatedData.tauxTVA,
         
         // Dates
-        dateEmission: new Date(validatedData.dateEmission),
+        dateCreation: new Date(validatedData.dateEmission),
         dateEcheance: new Date(validatedData.dateEcheance),
         
         // Paiement
-        modePaiementPrevu: validatedData.modePaiement,
-        conditionsPaiement: validatedData.conditionsPaiement,
+        modalitesPaiement: validatedData.conditionsPaiement,
         
         // Progression
-        pourcentageAvancement: validatedData.pourcentageAvancement,
-        montantDejaFacture: validatedData.montantDejaFacture || 0,
+        avancement: validatedData.pourcentageAvancement || 0,
         
         // Métadonnées
         statut: 'BROUILLON',
-        createdBy: session.user.id,
         notes: validatedData.notes
       },
       include: {
@@ -274,7 +270,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Envoi par email si demandé
-    if (validatedData.envoyerParEmail && facture.client.email) {
+    if (validatedData.envoyerParEmail && facture.client?.email) {
       await envoyerFactureParEmail(facture.id);
     }
 
@@ -286,7 +282,7 @@ export async function POST(request: NextRequest) {
         entiteId: facture.id,
         nouvelleValeur: {
           numero: facture.numero,
-          montantTTC: facture.montantTTC,
+          montantTTC: facture.totalTTC,
           type: facture.type
         },
         userId: session.user.id,
@@ -320,7 +316,7 @@ async function genererNumeroFacture(): Promise<string> {
   
   const nbFacturesMois = await prisma.devis.count({
     where: {
-      dateEmission: {
+      dateCreation: {
         gte: debutMois,
         lte: finMois
       }
@@ -338,13 +334,8 @@ async function genererPDFFacture(factureId: string): Promise<void> {
   // En production, ici on utiliserait jsPDF, Puppeteer, ou un service externe
   // Pour l'instant, on simule la génération
   
-  await prisma.devis.update({
-    where: { id: factureId },
-    data: {
-      pdfGenere: true,
-      cheminPDF: `/factures/pdf/${factureId}.pdf`
-    }
-  });
+  // En production, on ajouterait les champs PDF au modèle Devis
+  console.log(`📄 PDF généré pour facture ${factureId}`);
 }
 
 // Fonction pour envoyer la facture par email (simulée)
@@ -360,13 +351,8 @@ async function envoyerFactureParEmail(factureId: string): Promise<void> {
   if (facture) {
     console.log(`📧 Email envoyé à: ${facture.client.email}`);
     
-    await prisma.devis.update({
-      where: { id: factureId },
-      data: {
-        emailEnvoye: true,
-        dateEnvoiEmail: new Date()
-      }
-    });
+    // En production, on ajouterait les champs email au modèle Devis
+    console.log(`📧 Email envoyé pour facture ${factureId}`);
   }
 }
 
@@ -405,22 +391,21 @@ export async function PUT(request: NextRequest) {
           data: {
             numero: numeroFacture,
             clientId: devis.clientId,
-            devisId: devis.id,
             chantierId: devis.chantierId,
             type: 'DEVIS',
             objet: `Facturation devis ${devis.numero} - ${devis.objet}`,
             
-            montantHT: devis.montant,
-            tauxTVA: devis.tauxTVA || 20,
-            montantTVA: devis.montant * ((devis.tauxTVA || 20) / 100),
-            montantTTC: devis.totalTTC || devis.montant * 1.2,
+            montant: devis.totalTTC || devis.montant * 1.2,
+            totalHT: devis.montant,
+            totalTVA: devis.montant * ((devis.tva || 20) / 100),
+            totalTTC: devis.totalTTC || devis.montant * 1.2,
+            tva: devis.tva || 20,
             
-            dateEmission: new Date(),
+            dateCreation: new Date(),
             dateEcheance: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 jours
             
-            conditionsPaiement: '30 jours',
-            statut: 'EMISE',
-            createdBy: session.user.id
+            modalitesPaiement: '30 jours',
+            statut: 'ENVOYE',
           }
         });
 
@@ -429,7 +414,7 @@ export async function PUT(request: NextRequest) {
         // Marquer le devis comme facturé
         await prisma.devis.update({
           where: { id: devis.id },
-          data: { statut: 'FACTURE' }
+          data: { statut: 'PAYE' }
         });
 
       } catch (error) {

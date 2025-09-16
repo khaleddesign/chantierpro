@@ -100,7 +100,7 @@ export default function PWAManager({ userId }: PWAManagerProps) {
       
       const subscription = await swRegistration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource
       })
 
       // Envoyer l'abonnement au serveur
@@ -149,7 +149,7 @@ export default function PWAManager({ userId }: PWAManagerProps) {
   const manualSync = async () => {
     if (swRegistration && 'sync' in window.ServiceWorkerRegistration.prototype) {
       try {
-        await swRegistration.sync.register('background-sync')
+        await (swRegistration as any).sync.register('background-sync')
         console.log('[PWA] Synchronisation manuelle déclenchée')
       } catch (error) {
         console.error('[PWA] Erreur synchronisation manuelle:', error)

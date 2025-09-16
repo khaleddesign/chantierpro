@@ -52,7 +52,8 @@ class MobileJWTManager {
       lastSync: new Date()
     }
 
-    const accessToken = await new SignJWT(sessionData)
+    const payload = { ...sessionData }; // Convertir l'objet de classe en objet littéral
+    const accessToken = await new SignJWT(payload)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt(now)
       .setExpirationTime(now + 30 * 24 * 60 * 60) // 30 jours
@@ -81,7 +82,7 @@ class MobileJWTManager {
         issuer: 'chantierpro-mobile'
       })
 
-      return payload as MobileTokenPayload
+      return payload as unknown as MobileTokenPayload
     } catch (error) {
       console.error('Token verification failed:', error)
       return null

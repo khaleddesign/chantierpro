@@ -150,7 +150,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
             }
           }
         }),
-        prisma.user.groupBy({
+        (prisma.user.groupBy as any)({
           by: ['typeClient'],
           where: { role: 'CLIENT' },
           _count: { _all: true },

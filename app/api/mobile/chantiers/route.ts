@@ -24,8 +24,7 @@ export async function GET(request: NextRequest) {
       whereCondition.clientId = userSession.userId
     } else if (userSession.role === 'OUVRIER') {
       whereCondition.OR = [
-        { assigneeId: userSession.userId },
-        { equipes: { some: { membresIds: { contains: userSession.userId } } } }
+        { assignees: { some: { id: userSession.userId } } }
       ]
     }
 
@@ -48,18 +47,11 @@ export async function GET(request: NextRequest) {
             company: true
           }
         },
-        assignee: {
+        assignees: {
           select: {
             id: true,
             name: true,
             email: true
-          }
-        },
-        equipes: {
-          select: {
-            id: true,
-            nom: true,
-            membresIds: true
           }
         },
         etapes: {
@@ -89,12 +81,12 @@ export async function GET(request: NextRequest) {
         messages: {
           select: {
             id: true,
-            contenu: true,
+            message: true,
             expediteur: {
               select: { id: true, name: true }
             },
             createdAt: true,
-            isRead: true
+            lu: true
           },
           take: 20,
           orderBy: { createdAt: 'desc' }
@@ -163,7 +155,7 @@ export async function POST(request: NextRequest) {
               },
               include: {
                 client: { select: { id: true, name: true, email: true } },
-                assignee: { select: { id: true, name: true, email: true } }
+                assignees: { select: { id: true, name: true, email: true } }
               }
             })
             results.push({ 
@@ -180,7 +172,7 @@ export async function POST(request: NextRequest) {
               data: action.data,
               include: {
                 client: { select: { id: true, name: true, email: true } },
-                assignee: { select: { id: true, name: true, email: true } }
+                assignees: { select: { id: true, name: true, email: true } }
               }
             })
             results.push({ 

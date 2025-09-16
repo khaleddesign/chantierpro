@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const timeWindow = new Date(Date.now() - timeframes[params.timeframe]);
 
     // Construction des filtres
-    const where: any = {
+    const where: Record<string, unknown> = {
       timestamp: { gte: timeWindow }
     };
 

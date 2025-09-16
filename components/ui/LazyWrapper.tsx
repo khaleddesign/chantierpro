@@ -48,7 +48,7 @@ export default function LazyWrapper<T = {}>({
 }
 
 // Hook utilitaire pour créer des composants lazy avec loading personnalisé
-export function createLazyComponent<T = {}>(
+export function createLazyComponent<T = Record<string, any>>(
   importFn: () => Promise<{ default: ComponentType<T> }>,
   fallbackComponent?: ComponentType<any>
 ) {
@@ -59,7 +59,7 @@ export function createLazyComponent<T = {}>(
     
     return (
       <Suspense fallback={<FallbackComponent />}>
-        <LazyComponent {...props} />
+        <LazyComponent {...(props as any)} />
       </Suspense>
     );
   };

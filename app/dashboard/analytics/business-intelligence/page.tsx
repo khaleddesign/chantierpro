@@ -18,7 +18,6 @@ import {
   AlertTriangle,
   Target,
   Clock,
-  PieChart,
   BarChart3,
   LineChart,
   RefreshCw,
@@ -38,6 +37,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   PieChart as RechartsPieChart,
+  Pie,
   Cell,
   ComposedChart,
   Legend,
@@ -399,7 +399,7 @@ export default function BusinessIntelligencePage() {
                   variant="outline"
                   className="w-full justify-start"
                 >
-                  <PieChart className="h-4 w-4 mr-2" />
+                  <BarChart3 className="h-4 w-4 mr-2" />
                   Générer rapport mensuel
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
@@ -462,7 +462,7 @@ export default function BusinessIntelligencePage() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, pourcentage }) => `${name} (${pourcentage.toFixed(1)}%)`}
+                        label={({ name, value }) => `${name} (${value})`}
                         outerRadius={120}
                         fill="#8884d8"
                         dataKey="montant"
@@ -557,7 +557,7 @@ export default function BusinessIntelligencePage() {
                           <Progress
                             value={client.scoreRisque}
                             className="mt-2"
-                            color={client.scoreRisque > 70 ? "bg-red-600" : "bg-orange-600"}
+                            color={client.scoreRisque > 70 ? "red" : "yellow"}
                           />
                         </div>
                       ))}

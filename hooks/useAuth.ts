@@ -18,6 +18,7 @@ interface AuthContextType {
   logout: () => void;
   register: (userData: any) => Promise<boolean>;
   error: string | null;
+  clearError: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);

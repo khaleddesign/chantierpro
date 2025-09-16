@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Filtres additionnels
     if (search) {
       where.OR = [
-        { objet: { contains: search, mode: "insensitive" } },
+        { titre: { contains: search, mode: "insensitive" } },
         { description: { contains: search, mode: "insensitive" } },
         { client: { name: { contains: search, mode: "insensitive" } } },
         { client: { company: { contains: search, mode: "insensitive" } } }
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       data: {
         clientId,
         type: type as TypeInteraction,
-        objet,
+        titre: objet,
         description,
         dateContact: dateContact ? new Date(dateContact) : new Date(),
         prochaineSuite: prochaineSuite ? new Date(prochaineSuite) : null,

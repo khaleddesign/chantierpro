@@ -80,7 +80,6 @@ export async function GET(request: NextRequest) {
       type: doc.type,
       taille: doc.taille,
       url: doc.url,
-      description: doc.description,
       chantierId: doc.chantierId,
       chantier: doc.chantier,
       uploader: doc.uploader,
@@ -143,18 +142,13 @@ export async function POST(request: NextRequest) {
             const newDocument = await prisma.document.create({
               data: {
                 nom: action.data.nom,
+                nomOriginal: action.data.nom,
                 type: action.data.type,
                 taille: action.data.taille,
                 url: action.data.url, // URL temporaire ou base64
-                description: action.data.description,
-                chantierId: action.data.chantierId,
-                uploaderId: userSession.userId,
-                // Marquer comme document mobile en attente de traitement
-                metadata: JSON.stringify({
-                  uploadedFromMobile: true,
-                  deviceId: userSession.deviceId,
-                  originalName: action.data.originalName
-                })
+                uploader: {
+                  connect: { id: userSession.userId }
+                }
               },
               include: {
                 chantier: { select: { id: true, nom: true } },

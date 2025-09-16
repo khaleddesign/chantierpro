@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     const opportunite = await prisma.opportunite.create({
       data: {
         clientId,
-        nom,
+        titre: nom,
         description,
         valeurEstimee: parseFloat(valeurEstimee),
         probabilite: parseInt(probabilite),

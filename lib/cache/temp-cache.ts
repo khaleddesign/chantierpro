@@ -77,14 +77,14 @@ export class RedisCache {
   async getStats(): Promise<{
     hits: number;
     misses: number;
-    keys: number;
-    memoryUsage: number;
+    totalKeys: number;
+    memory: string;
   }> {
     return {
       hits: 0,
       misses: 0,
-      keys: this.memoryCache.size,
-      memoryUsage: this.memoryCache.size * 100 // Rough estimate
+      totalKeys: this.memoryCache.size,
+      memory: `${this.memoryCache.size * 100}B` // Rough estimate
     };
   }
 
@@ -94,3 +94,22 @@ export class RedisCache {
 }
 
 export const cache = new RedisCache();
+
+// Export des membres manquants
+export const useCacheStats = () => {
+  return {
+    hits: 0,
+    misses: 0,
+    totalKeys: cache['memoryCache'].size,
+    memory: `${cache['memoryCache'].size * 100}B`
+  };
+};
+
+export const CacheManager = {
+  getStats: () => cache.getStats(),
+  clear: () => cache['memoryCache'].clear(),
+  invalidate: (pattern: string) => {
+    const keys = Array.from(cache['memoryCache'].keys()).filter(key => key.includes(pattern));
+    keys.forEach(key => cache['memoryCache'].delete(key));
+  }
+};

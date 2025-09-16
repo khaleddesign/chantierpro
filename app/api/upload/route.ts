@@ -64,7 +64,7 @@ async function uploadHandler(request: NextRequest) {
           thumbnailSize: 300
         });
 
-        finalBuffer = optimized.optimized;
+        finalBuffer = Buffer.from(optimized.optimized);
         compressionInfo.finalSize = optimized.metadata.optimizedSize;
         compressionInfo.ratio = calculateCompressionRatio(
           optimized.metadata.originalSize,

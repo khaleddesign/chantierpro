@@ -35,8 +35,7 @@ export async function GET(request: NextRequest) {
     } else if (userSession.role === 'OUVRIER') {
       whereCondition.chantier = {
         OR: [
-          { assigneeId: userSession.userId },
-          { equipes: { some: { membresIds: { contains: userSession.userId } } } }
+          { assignees: { some: { id: userSession.userId } } }
         ]
       }
     }
@@ -61,15 +60,6 @@ export async function GET(request: NextRequest) {
             }
           }
         },
-        fichiers: {
-          select: {
-            id: true,
-            nom: true,
-            type: true,
-            url: true,
-            taille: true
-          }
-        }
       },
       orderBy: { createdAt: 'desc' },
       take: limit
@@ -87,7 +77,7 @@ export async function GET(request: NextRequest) {
             id: { in: messageIds },
             expediteurId: { not: userSession.userId }
           },
-          data: { isRead: true }
+          data: { lu: true }
         })
       }
     }
@@ -134,8 +124,7 @@ export async function POST(request: NextRequest) {
         id: chantierId,
         OR: userSession.role === 'ADMIN' || userSession.permissions.includes('*') ? undefined : [
           { clientId: userSession.userId },
-          { assigneeId: userSession.userId },
-          { equipes: { some: { membresIds: { contains: userSession.userId } } } }
+          { assignees: { some: { id: userSession.userId } } }
         ]
       }
     })
@@ -149,21 +138,10 @@ export async function POST(request: NextRequest) {
 
     const newMessage = await prisma.message.create({
       data: {
-        contenu,
+        message: contenu,
         chantierId,
         expediteurId: userSession.userId,
-        isRead: false,
-        fichiers: {
-          createMany: {
-            data: fichiers.map((fichier: any) => ({
-              nom: fichier.nom,
-              type: fichier.type,
-              url: fichier.url,
-              taille: fichier.taille,
-              uploaderId: userSession.userId
-            }))
-          }
-        }
+        lu: false
       },
       include: {
         expediteur: {
@@ -180,15 +158,6 @@ export async function POST(request: NextRequest) {
             nom: true
           }
         },
-        fichiers: {
-          select: {
-            id: true,
-            nom: true,
-            type: true,
-            url: true,
-            taille: true
-          }
-        }
       }
     })
 
@@ -227,7 +196,7 @@ export async function PATCH(request: NextRequest) {
             id: { in: messageIds },
             expediteurId: { not: userSession.userId }
           },
-          data: { isRead: true }
+          data: { lu: true }
         })
         break
 
@@ -237,7 +206,7 @@ export async function PATCH(request: NextRequest) {
             id: { in: messageIds },
             expediteurId: { not: userSession.userId }
           },
-          data: { isRead: false }
+          data: { lu: false }
         })
         break
 

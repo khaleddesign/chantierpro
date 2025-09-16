@@ -437,7 +437,7 @@ export default function MonitoringDashboard() {
                     <div className="flex items-center gap-3">
                       <Badge 
                         variant={log.success ? "default" : "destructive"}
-                        style={{ backgroundColor: getRiskLevelColor(log.riskLevel) }}
+                        className={`bg-[${getRiskLevelColor(log.riskLevel)}]`}
                       >
                         {log.riskLevel}
                       </Badge>

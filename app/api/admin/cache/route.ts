@@ -6,6 +6,7 @@ import { cache } from '@/lib/cache';
 import { checkPermission, logSecurityEvent } from '@/lib/security';
 import { getClientIp } from '@/lib/utils';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 const cacheQuerySchema = z.object({
   pattern: z.string().optional(),
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Construction des filtres pour la base de données
-    const where: any = {};
+    const where: Prisma.CacheEntryWhereInput = {};
     
     if (params.pattern) {
       where.key = { contains: params.pattern };
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
 
     const tagStats = cacheEntries.reduce((stats, entry) => {
       const tags = Array.isArray(entry.tags) ? entry.tags : [];
-      tags.forEach((tag: any) => {
+      tags.forEach((tag: unknown) => {
         if (typeof tag === 'string') {
           stats[tag] = (stats[tag] || 0) + 1;
         }
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
 
     // Métriques du cache mémoire (si disponible)
-    const memoryCache = (cache as any).memoryCache;
+    const memoryCache = (cache as unknown as { memoryCache?: { size: number } }).memoryCache;
     const memoryCacheSize = memoryCache ? memoryCache.size : 0;
 
     const stats = {
@@ -98,7 +99,7 @@ export async function GET(request: NextRequest) {
       totalSizeBytes: totalSize,
       averageSizeBytes: totalCount > 0 ? Math.round(totalSize / totalCount) : 0,
       tagDistribution: Object.entries(tagStats)
-        .sort(([, a], [, b]) => b - a)
+        .sort(([, a], [, b]) => (b as number) - (a as number))
         .slice(0, 10)
         .map(([tag, count]) => ({ tag, count }))
     };
@@ -173,7 +174,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action, pattern, keys } = cacheActionSchema.parse(body);
 
-    let result: any = {};
+    let result: Record<string, unknown> = {};
 
     switch (action) {
       case 'flush':
@@ -181,7 +182,7 @@ export async function POST(request: NextRequest) {
         const deleteAllResult = await prisma.cacheEntry.deleteMany({});
         
         // Vider aussi le cache mémoire
-        const memoryCache = (cache as any).memoryCache;
+        const memoryCache = (cache as unknown as { memoryCache?: { clear: () => void } }).memoryCache;
         if (memoryCache) {
           memoryCache.clear();
         }
@@ -232,7 +233,7 @@ export async function POST(request: NextRequest) {
           }, { status: 400 });
         }
 
-        let where: any = {};
+        let where: Prisma.CacheEntryWhereInput = {};
         
         if (pattern) {
           where.key = { contains: pattern };
@@ -248,7 +249,7 @@ export async function POST(request: NextRequest) {
         const deletePatternResult = await prisma.cacheEntry.deleteMany({ where });
 
         // Invalider aussi dans le cache mémoire
-        const memoryCacheInstance = (cache as any).memoryCache;
+        const memoryCacheInstance = (cache as unknown as { memoryCache?: { delete: (key: string) => void } }).memoryCache;
         if (memoryCacheInstance && keys) {
           keys.forEach(key => memoryCacheInstance.delete(key));
         }
@@ -317,95 +318,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/admin/cache/[key] - Récupérer une entrée spécifique
-export async function getEntryByKey(key: string, request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
-
-    const hasPermission = await checkPermission(session.user.id, 'MANAGE_CACHE', 'admin');
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 });
-    }
-
-    const entry = await prisma.cacheEntry.findUnique({
-      where: { key }
-    });
-
-    if (!entry) {
-      return NextResponse.json({ error: 'Entrée non trouvée' }, { status: 404 });
-    }
-
-    // Vérifier aussi dans le cache mémoire
-    const memoryValue = await cache.get(key);
-    const inMemory = memoryValue !== null;
-
-    const response = {
-      success: true,
-      data: {
-        ...entry,
-        tags: Array.isArray(entry.tags) ? entry.tags : [],
-        isExpired: entry.expiresAt ? entry.expiresAt < new Date() : false,
-        inMemory,
-        sizeBytes: JSON.stringify(entry.value).length
-      }
-    };
-
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('Erreur récupération entrée cache:', error);
-    return NextResponse.json({
-      error: 'Erreur interne du serveur'
-    }, { status: 500 });
-  }
-}
-
-// DELETE /api/admin/cache/[key] - Supprimer une entrée spécifique
-export async function deleteEntryByKey(key: string, request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
-
-    const hasPermission = await checkPermission(session.user.id, 'MANAGE_CACHE', 'admin');
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 });
-    }
-
-    // Supprimer de la base de données
-    const deleteResult = await prisma.cacheEntry.delete({
-      where: { key }
-    });
-
-    // Supprimer du cache mémoire
-    const memoryCache = (cache as any).memoryCache;
-    const wasInMemory = memoryCache ? memoryCache.delete(key) : false;
-
-    await logSecurityEvent({
-      userId: session.user.id,
-      action: 'CACHE_DELETE_ENTRY',
-      resource: 'cache',
-      ipAddress: getClientIp(request),
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      success: true,
-      riskLevel: 'LOW',
-      details: { key, wasInMemory }
-    });
-
-    return NextResponse.json({
-      success: true,
-      key,
-      wasInMemory
-    });
-
-  } catch (error) {
-    console.error('Erreur suppression entrée cache:', error);
-    return NextResponse.json({
-      error: 'Erreur interne du serveur'
-    }, { status: 500 });
-  }
-}
+// Les fonctions getEntryByKey et deleteEntryByKey ont été déplacées vers lib/services/cache-service.ts

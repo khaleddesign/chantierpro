@@ -109,7 +109,6 @@ export async function GET(request: NextRequest) {
       dateDebut: planning.dateDebut,
       dateFin: planning.dateFin,
       statut: planning.statut,
-      priorite: planning.priorite,
       lieu: planning.lieu,
       chantier: planning.chantier,
       organisateur: planning.organisateur,

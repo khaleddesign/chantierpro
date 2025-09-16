@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
 
     // Construction des filtres
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (integrationId) where.integrationId = integrationId;
     if (syncType) where.syncType = syncType;
     if (status) where.status = status;
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         syncType,
         direction,
         status: 'PENDING',
-        details: options as any
+        details: options as Record<string, unknown>
       }
     });
 
@@ -301,7 +301,7 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
     switch (syncRecord.syncType) {
       case 'CLIENTS':
         if (syncRecord.integration.type === 'ACCOUNTING') {
-          result = await (integrationInstance as any).syncClients();
+          result = await (integrationInstance as unknown as { syncClients: () => Promise<unknown> }).syncClients();
           totalItems = result.data?.created + result.data?.updated || 0;
           successfulItems = totalItems;
           processedItems = totalItems;
@@ -310,7 +310,7 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
 
       case 'FACTURES':
         if (syncRecord.integration.type === 'ACCOUNTING') {
-          result = await (integrationInstance as any).syncFactures();
+          result = await (integrationInstance as unknown as { syncFactures: () => Promise<unknown> }).syncFactures();
           totalItems = result.data?.created + result.data?.updated || 0;
           successfulItems = totalItems;
           processedItems = totalItems;
@@ -318,7 +318,7 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
         break;
 
       case 'FULL':
-        result = await integrationInstance.syncData(syncRecord.details as any);
+        result = await integrationInstance.syncData(syncRecord.details as Record<string, unknown>);
         // Les détails dépendent de l'implémentation spécifique
         totalItems = 1;
         processedItems = 1;
@@ -341,9 +341,9 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
         successfulItems,
         failedItems,
         details: {
-          ...syncRecord.details as any,
+          ...syncRecord.details as Record<string, unknown>,
           result: result.data
-        } as any
+        } as Record<string, unknown>
       }
     });
 

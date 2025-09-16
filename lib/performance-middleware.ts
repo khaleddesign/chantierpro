@@ -182,7 +182,7 @@ async function monitoredHandler(
   const originalCacheSet = cache.set.bind(cache);
   
   cache.get = async function<T>(key: string): Promise<T | null> {
-    const result = await originalCacheGet<T>(key);
+    const result = await originalCacheGet(key);
     const context = performanceContexts.get(requestId);
     if (context) {
       if (result !== null) {

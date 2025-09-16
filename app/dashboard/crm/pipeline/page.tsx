@@ -149,7 +149,7 @@ export default function PipelineCommercialPage() {
           const mockOpportunites: Opportunite[] = [
         {
           id: '1',
-          nom: 'Rénovation Cuisine Moderne',
+          titre: 'Rénovation Cuisine Moderne',
           description: 'Rénovation complète cuisine 25m² avec îlot central et électroménager haut de gamme',
           valeurEstimee: 35000,
           probabilite: 75,
@@ -170,7 +170,7 @@ export default function PipelineCommercialPage() {
         },
         {
           id: '2',
-          nom: 'Extension Maison Individuelle',
+          titre: 'Extension Maison Individuelle',
           description: 'Extension 40m² avec suite parentale et salle de bain',
           valeurEstimee: 65000,
           probabilite: 45,
@@ -190,7 +190,7 @@ export default function PipelineCommercialPage() {
         },
         {
           id: '3',
-          nom: 'Aménagement Combles 80m²',
+          titre: 'Aménagement Combles 80m²',
           description: 'Création de 2 chambres et 1 bureau dans les combles existants',
           valeurEstimee: 45000,
           probabilite: 90,
@@ -210,7 +210,7 @@ export default function PipelineCommercialPage() {
         },
         {
           id: '4',
-          nom: 'Démolition Cloison + Ouverture',
+          titre: 'Démolition Cloison + Ouverture',
           description: 'Ouverture cuisine sur salon avec poutre IPN',
           valeurEstimee: 12000,
           probabilite: 25,
@@ -229,7 +229,7 @@ export default function PipelineCommercialPage() {
         },
         {
           id: '5',
-          nom: 'Rénovation Salle de Bain Complète',
+          titre: 'Rénovation Salle de Bain Complète',
           description: 'Rénovation totale salle de bain 8m² avec douche italienne',
           valeurEstimee: 28000,
           probabilite: 100,
@@ -340,7 +340,7 @@ export default function PipelineCommercialPage() {
           // Recherche textuelle sécurisée
           let matchSearch = true;
           if (safeTerm.trim()) {
-            const titre = String(opp.titre || opp.nom || opp.description || '').toLowerCase();
+            const titre = String(opp.titre || opp.description || '').toLowerCase();
             const clientName = String(opp.client?.nom || opp.client?.name || '').toLowerCase();
             const company = String(opp.client?.company || '').toLowerCase();
             
@@ -350,7 +350,7 @@ export default function PipelineCommercialPage() {
           }
           
           // Filtres numériques sécurisés
-          const valeur = parseFloat(opp.valeurEstimee) || 0;
+          const valeur = parseFloat(String(opp.valeurEstimee)) || 0;
           const matchValeur = (!filters?.valeurMin || valeur >= safeValeurMin) &&
                              (!filters?.valeurMax || valeur <= safeValeurMax);
           

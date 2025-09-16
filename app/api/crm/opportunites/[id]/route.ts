@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { executeWorkflows } from '../../workflows/route';
+import { executeWorkflows } from '@/lib/services/workflow-service';
 
 // Schema de validation pour mettre à jour une opportunité
 const UpdateOpportuniteSchema = z.object({

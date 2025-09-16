@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'outline' | 'status-inprogress' | 'status-completed' | 'status-delayed' | 'status-planned' | 'priority-high' | 'priority-medium' | 'priority-low';
+  variant?: 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'destructive' | 'info' | 'outline' | 'status-inprogress' | 'status-completed' | 'status-delayed' | 'status-planned' | 'priority-high' | 'priority-medium' | 'priority-low';
   size?: 'sm' | 'default' | 'lg';
   className?: string;
 }
@@ -15,6 +15,7 @@ const variantStyles = {
   'success': 'bg-green-100 text-green-800 border border-green-200',
   'warning': 'bg-yellow-100 text-yellow-800 border border-yellow-200',
   'danger': 'bg-red-100 text-red-800 border border-red-200',
+  'destructive': 'bg-red-100 text-red-800 border border-red-200',
   'info': 'bg-cyan-100 text-cyan-800 border border-cyan-200',
   'outline': 'bg-transparent text-gray-800 border border-gray-300',
   'status-inprogress': 'bg-yellow-100 text-yellow-800 border border-yellow-200',

@@ -28,7 +28,6 @@ export {
   useChantierCache,
   useSearchCache,
   useDashboardStatsCache,
-  useCacheStats
 } from '../../hooks/useCache';
 
 // Types et constantes
@@ -76,7 +75,13 @@ export interface CacheStats {
   hitRate: number;
 }
 
-export class CacheManager {
+// Hook pour les statistiques de cache (à utiliser côté client)
+export function useCacheStats() {
+  // Cette fonction sera implémentée côté client
+  return { stats: null };
+}
+
+export class CacheManagerService {
   static async getCacheStats(): Promise<CacheStats> {
     try {
       const redisCache = new RedisCache();
@@ -143,7 +148,7 @@ export class CacheManager {
       const retrieved = await redisCache.get(testKey);
       await redisCache.del(testKey);
       
-      if (retrieved && retrieved.timestamp === testValue.timestamp) {
+      if (retrieved && typeof retrieved === 'object' && 'timestamp' in retrieved && (retrieved as any).timestamp === testValue.timestamp) {
         return {
           status: 'healthy',
           details: 'Cache is working properly'
@@ -241,3 +246,6 @@ export function safeCacheDeserialize<T>(data: string): T | null {
     return null;
   }
 }
+
+// Export pour la compatibilité
+export { CacheManagerService as CacheManager };

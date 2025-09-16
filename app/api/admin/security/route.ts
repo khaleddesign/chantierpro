@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // Statistiques d'alertes par niveau de risque
-      prisma.securityLog.groupBy({
+      (prisma.securityLog.groupBy as unknown as typeof prisma.securityLog.groupBy)({
         by: ['riskLevel'],
         where: {
           timestamp: baseWhere.timestamp,
@@ -116,14 +116,14 @@ export async function GET(request: NextRequest) {
       }),
 
       // Répartition par niveau de risque
-      prisma.securityLog.groupBy({
+      (prisma.securityLog.groupBy as unknown as typeof prisma.securityLog.groupBy)({
         by: ['riskLevel'],
         where: baseWhere,
         _count: { _all: true }
       }),
 
       // Top des actions suspectes
-      prisma.securityLog.groupBy({
+      (prisma.securityLog.groupBy as unknown as typeof prisma.securityLog.groupBy)({
         by: ['action'],
         where: {
           timestamp: baseWhere.timestamp,
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       }),
 
       // Top des IPs suspectes
-      prisma.securityLog.groupBy({
+      (prisma.securityLog.groupBy as unknown as typeof prisma.securityLog.groupBy)({
         by: ['ipAddress'],
         where: {
           ...where,

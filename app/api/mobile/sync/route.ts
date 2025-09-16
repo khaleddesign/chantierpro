@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         where: chantiersWhere,
         include: {
           client: { select: { id: true, name: true, email: true } },
-          assignee: { select: { id: true, name: true } },
+          assignees: { select: { id: true, name: true } },
           etapes: {
             select: {
               id: true,
@@ -106,7 +106,6 @@ export async function GET(request: NextRequest) {
           type: true,
           taille: true,
           url: true,
-          description: true,
           chantierId: true,
           chantier: { select: { id: true, nom: true } },
           uploader: { select: { id: true, name: true } },

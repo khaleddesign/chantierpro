@@ -10,7 +10,7 @@ async function getSecurityStatsHandler(request: NextRequest) {
   
   try {
     const securityStats = secureLogger.getSecurityStats();
-    const rateLimitStats = getRateLimitStats();
+    const rateLimitStats = await getRateLimitStats();
     
     const monitoringData = {
       timestamp: new Date().toISOString(),
@@ -95,7 +95,7 @@ async function generateSecurityAlerts(): Promise<Array<{
   }
   
   // Alerte pour activité de rate limiting élevée
-  const authRateLimit = rateLimitStats.typeBreakdown['AUTH'] || 0;
+  const authRateLimit = (await rateLimitStats).typeBreakdown['AUTH'] || 0;
   if (authRateLimit > 50) {
     alerts.push({
       severity: 'high' as const,

@@ -17,7 +17,7 @@ export default function OfflinePage() {
       // Déclencher une synchronisation
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
-          return registration.sync.register('background-sync')
+          return (registration as any).sync.register('background-sync')
         })
       }
     }

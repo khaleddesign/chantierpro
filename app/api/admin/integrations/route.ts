@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
 
     // Construction des filtres
-    const where: any = {};
+    const where: Record<string, unknown> = {};
     if (type) where.type = type;
     if (enabled !== null) where.enabled = enabled === 'true';
     if (status) where.status = status;
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         retryAttempts: validatedData.retryAttempts,
         apiKey: encryptedApiKey,
         apiSecret: encryptedApiSecret,
-        settings: validatedData.settings as any,
+        settings: validatedData.settings as Record<string, unknown>,
         status: 'INACTIVE',
         createdBy: session.user.id
       }
@@ -256,7 +256,7 @@ export async function PUT(
     }
 
     // Chiffrement des nouveaux credentials
-    let updateData: any = { ...validatedData };
+    let updateData: Record<string, unknown> = { ...validatedData };
 
     if (validatedData.apiKey) {
       const encrypted = DataEncryption.encrypt(validatedData.apiKey);
@@ -420,7 +420,7 @@ async function initializeIntegration(integrationId: string): Promise<void> {
       retryAttempts: integration.retryAttempts,
       apiKey,
       apiSecret,
-      settings: integration.settings as any || {}
+      settings: integration.settings as Record<string, unknown> || {}
     };
 
     // Création de l'instance d'intégration selon le type

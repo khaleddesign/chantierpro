@@ -280,7 +280,7 @@ async function calculateMetricSnapshot(params: {
           JOIN Devis d ON d.chantierId = ch.id
           WHERE d.statut IN ('ACCEPTE', 'PAYE')
             AND strftime('%Y-%m', ch.dateDebut) = ${period}
-        ` as any[];
+        ` as unknown[];
         value = marges[0]?.marge || 0;
         break;
 
@@ -316,13 +316,13 @@ async function calculateMetricSnapshot(params: {
       },
       create: {
         metric,
-        category: category as any,
+        category: category as string,
         value,
         previousValue,
         change,
         changePercent,
         period,
-        periodType: periodType as any
+        periodType: periodType as string
       },
       update: {
         value,

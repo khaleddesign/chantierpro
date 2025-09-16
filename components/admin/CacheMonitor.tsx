@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCacheStats, CacheManager } from '@/lib/cache';
+import { CacheManagerService } from '@/lib/cache';
 import { Activity, Database, Trash2, RefreshCw, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 
 interface CacheHealth {
@@ -10,13 +10,13 @@ interface CacheHealth {
 }
 
 export default function CacheMonitor() {
-  const { stats, refreshStats } = useCacheStats();
+  const [stats, setStats] = useState(null);
   const [health, setHealth] = useState<CacheHealth>({ status: 'healthy', details: '' });
   const [isClearing, setIsClearing] = useState(false);
   const [lastCleared, setLastCleared] = useState<Date | null>(null);
 
   const checkHealth = async () => {
-    const healthStatus = await CacheManager.healthCheck();
+    const healthStatus = await CacheManagerService.healthCheck();
     setHealth(healthStatus);
   };
 
@@ -27,9 +27,10 @@ export default function CacheMonitor() {
 
     setIsClearing(true);
     try {
-      await CacheManager.clearAllCaches();
+      await CacheManagerService.clearAllCaches();
       setLastCleared(new Date());
-      await refreshStats();
+      // Rafraîchir les stats après nettoyage
+      setStats(null);
       await checkHealth();
       alert('Cache vidé avec succès');
     } catch (error) {
@@ -85,7 +86,7 @@ export default function CacheMonitor() {
           
           <div className="flex items-center space-x-2">
             <button
-              onClick={refreshStats}
+              onClick={checkHealth}
               className="flex items-center space-x-1 px-3 py-1 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded hover:bg-gray-50"
             >
               <RefreshCw className="w-4 h-4" />

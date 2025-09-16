@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, ComponentType } from 'react';
 
 // Utility function pour créer des composants lazy avec fallback
-export function createLazyComponent<T = {}>(
+export function createLazyComponent<T = Record<string, any>>(
   importFn: () => Promise<{ default: ComponentType<T> }>,
   FallbackComponent: ComponentType = () => <div>Loading...</div>
 ) {
@@ -9,7 +9,7 @@ export function createLazyComponent<T = {}>(
 
   return (props: T) => (
     <Suspense fallback={<FallbackComponent />}>
-      <LazyComponent {...props} />
+      <LazyComponent {...(props as any)} />
     </Suspense>
   );
 }
@@ -25,7 +25,7 @@ export { default as LazyMediaViewer } from '../documents/LazyMediaViewer';
 export { default as LazyOpportunitesPipeline } from '../crm/LazyOpportunitesPipeline';
 
 // Utilitaires pour lazy loading
-export { default as LazyWrapper, createLazyComponent } from '../ui/LazyWrapper';
+export { default as LazyWrapper } from '../ui/LazyWrapper';
 
 // Types pour lazy loading
 export interface LazyComponentProps {
@@ -69,7 +69,7 @@ export function createLazyComponentFromPath<T = Record<string, any>>(
     </div>
   );
 
-  return createLazyComponent<T>(
+  return createLazyComponent<T extends React.ComponentType<any> ? React.ComponentProps<T> : T>(
     () => import(componentPath),
     FallbackComponent
   );
