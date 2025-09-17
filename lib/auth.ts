@@ -13,30 +13,46 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log('🔐 NextAuth authorize called with:', { 
+          email: credentials?.email, 
+          hasPassword: !!credentials?.password 
+        });
+
         if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Credentials manquants');
           return null;
         }
 
         try {
+          console.log('🔍 Recherche utilisateur:', credentials.email);
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email
             }
           });
 
-          if (!user || !user.password) {
+          if (!user) {
+            console.log('❌ Utilisateur non trouvé:', credentials.email);
             return null;
           }
 
+          if (!user.password) {
+            console.log('❌ Mot de passe manquant pour:', credentials.email);
+            return null;
+          }
+
+          console.log('🔑 Vérification mot de passe pour:', credentials.email);
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
 
           if (!isPasswordValid) {
+            console.log('❌ Mot de passe invalide pour:', credentials.email);
             return null;
           }
 
+          console.log('✅ Authentification réussie pour:', credentials.email);
           return {
             id: user.id,
             email: user.email,
@@ -46,7 +62,7 @@ export const authOptions: NextAuthOptions = {
             company: user.company || undefined,
           };
         } catch (error) {
-          console.error('Erreur base de données auth:', error);
+          console.error('❌ Erreur base de données auth:', error);
           return null;
         }
       }
