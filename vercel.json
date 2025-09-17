@@ -7,7 +7,7 @@
   "env": {
     "NEXTAUTH_SECRET": "chantierpro-production-secret-key-2025-very-long-and-secure",
     "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
-    "DATABASE_URL": "file:./tmp/dev.db",
+    "DATABASE_URL": "postgresql://postgres:[YOUR-PASSWORD]@db.oikxkloiqxhwwtkfpbkb.supabase.co:5432/postgres",
     "REDIS_DISABLED": "true",
     "NODE_ENV": "production"
   },
@@ -15,7 +15,7 @@
     "env": {
       "NEXTAUTH_SECRET": "chantierpro-production-secret-key-2025-very-long-and-secure",
       "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
-      "DATABASE_URL": "file:./tmp/dev.db",
+      "DATABASE_URL": "postgresql://postgres:[YOUR-PASSWORD]@db.oikxkloiqxhwwtkfpbkb.supabase.co:5432/postgres",
       "REDIS_DISABLED": "true"
     }
   }
