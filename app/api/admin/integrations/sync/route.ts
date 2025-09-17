@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
         syncType,
         direction,
         status: 'PENDING',
-        details: options as Record<string, unknown>
+        details: options as any
       }
     });
 
@@ -341,9 +341,9 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
         successfulItems,
         failedItems,
         details: {
-          ...syncRecord.details as Record<string, unknown>,
+          ...syncRecord.details as any,
           result: result.data
-        } as Record<string, unknown>
+        } as any
       }
     });
 

@@ -281,7 +281,7 @@ async function calculateMetricSnapshot(params: {
           WHERE d.statut IN ('ACCEPTE', 'PAYE')
             AND strftime('%Y-%m', ch.dateDebut) = ${period}
         ` as unknown[];
-        value = marges[0]?.marge || 0;
+        value = (marges[0] as any)?.marge || 0;
         break;
 
       case 'nombre_chantiers':
@@ -316,13 +316,13 @@ async function calculateMetricSnapshot(params: {
       },
       create: {
         metric,
-        category: category as string,
+        category: category as any,
         value,
         previousValue,
         change,
         changePercent,
         period,
-        periodType: periodType as string
+        periodType: periodType as any
       },
       update: {
         value,

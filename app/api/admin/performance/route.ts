@@ -59,11 +59,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (params.minDuration) {
-      where.duration = { ...where.duration, gte: params.minDuration };
+      where.duration = { gte: params.minDuration };
     }
 
     if (params.maxDuration) {
-      where.duration = { ...where.duration, lte: params.maxDuration };
+      where.duration = { lte: params.maxDuration };
     }
 
     if (params.statusCode) {

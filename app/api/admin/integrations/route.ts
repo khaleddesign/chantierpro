@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         retryAttempts: validatedData.retryAttempts,
         apiKey: encryptedApiKey,
         apiSecret: encryptedApiSecret,
-        settings: validatedData.settings as Record<string, unknown>,
+        settings: validatedData.settings as any,
         status: 'INACTIVE',
         createdBy: session.user.id
       }

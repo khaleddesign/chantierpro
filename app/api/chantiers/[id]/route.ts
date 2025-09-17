@@ -116,7 +116,7 @@ export async function GET(
     const hasAccess =
       session.user.role === "ADMIN" ||
       (chantier.clientId === session.user.id) || // Le client propriétaire
-      (session.user.role === "COMMERCIAL" && chantier.client?.commercialId === session.user.id) || // Le commercial assigné au client
+      (session.user.role === "COMMERCIAL" && (chantier.client as any)?.commercialId === session.user.id) || // Le commercial assigné au client
       (chantier.assignees.some(a => a.id === session.user.id)); // L'utilisateur est assigné au chantier
 
     if (!hasAccess) {

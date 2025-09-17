@@ -59,6 +59,7 @@ async function uploadHandler(request: NextRequest) {
       await mkdir(uploadDir, { recursive: true });
     }
     let finalFileName: string;
+    let finalBuffer: Buffer = buffer;
     let compressionInfo: { ratio?: number; originalSize: number; finalSize: number } = {
       originalSize: buffer.length,
       finalSize: buffer.length
