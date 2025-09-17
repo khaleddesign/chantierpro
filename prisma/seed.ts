@@ -50,6 +50,65 @@ async function main() {
     },
   });
 
+  // Créer un deuxième commercial
+  const commercial2 = await prisma.user.upsert({
+    where: { email: 'sophie.bernard@chantierpro.fr' },
+    update: {},
+    create: {
+      email: 'sophie.bernard@chantierpro.fr',
+      name: 'Sophie Bernard',
+      password: await bcrypt.hash('commercial123', 10),
+      role: 'COMMERCIAL',
+      phone: '+33 1 23 45 67 92',
+      company: 'ChantierPro SAS',
+      address: '123 Avenue de la Construction, 75001 Paris',
+      typeClient: 'PROFESSIONNEL',
+      secteurActivite: 'Commercial BTP',
+      codePostal: '75001',
+      ville: 'Paris',
+      pays: 'France'
+    },
+  });
+
+  // Créer quelques ouvriers
+  const ouvrier1 = await prisma.user.upsert({
+    where: { email: 'michel.roux@chantierpro.fr' },
+    update: {},
+    create: {
+      email: 'michel.roux@chantierpro.fr',
+      name: 'Michel Roux',
+      password: await bcrypt.hash('ouvrier123', 10),
+      role: 'OUVRIER',
+      phone: '+33 1 23 45 67 93',
+      company: 'ChantierPro SAS',
+      address: '123 Avenue de la Construction, 75001 Paris',
+      typeClient: 'PROFESSIONNEL',
+      secteurActivite: 'Maçonnerie',
+      codePostal: '75001',
+      ville: 'Paris',
+      pays: 'France'
+    },
+  });
+
+  const ouvrier2 = await prisma.user.upsert({
+    where: { email: 'alain.moreau@chantierpro.fr' },
+    update: {},
+    create: {
+      email: 'alain.moreau@chantierpro.fr',
+      name: 'Alain Moreau',
+      password: await bcrypt.hash('ouvrier123', 10),
+      role: 'OUVRIER',
+      phone: '+33 1 23 45 67 94',
+      company: 'ChantierPro SAS',
+      address: '123 Avenue de la Construction, 75001 Paris',
+      typeClient: 'PROFESSIONNEL',
+      secteurActivite: 'Électricité',
+      codePostal: '75001',
+      ville: 'Paris',
+      pays: 'France'
+    },
+  });
+
   // Créer quelques clients
   const client1 = await prisma.user.upsert({
     where: { email: 'marie.dubois@email.fr' },
@@ -57,6 +116,7 @@ async function main() {
     create: {
       email: 'marie.dubois@email.fr',
       name: 'Marie Dubois',
+      password: await bcrypt.hash('client123', 10),
       role: 'CLIENT',
       phone: '+33 1 23 45 67 91',
       company: 'Dubois Immobilier',
@@ -76,6 +136,7 @@ async function main() {
     create: {
       email: 'pierre.martin@email.fr',
       name: 'Pierre Martin',
+      password: await bcrypt.hash('client123', 10),
       role: 'CLIENT',
       phone: '+33 4 56 78 90 12',
       address: 'Lot 12 Les Jardins Verts, 34000 Montpellier',
@@ -84,6 +145,44 @@ async function main() {
       ville: 'Montpellier',
       pays: 'France',
       commercialId: commercial.id
+    },
+  });
+
+  const client3 = await prisma.user.upsert({
+    where: { email: 'jean.durand@email.fr' },
+    update: {},
+    create: {
+      email: 'jean.durand@email.fr',
+      name: 'Jean Durand',
+      password: await bcrypt.hash('client123', 10),
+      role: 'CLIENT',
+      phone: '+33 2 34 56 78 90',
+      company: 'Durand Construction',
+      address: '45 Rue de la Paix, 69000 Lyon',
+      typeClient: 'PROFESSIONNEL',
+      secteurActivite: 'Construction',
+      codePostal: '69000',
+      ville: 'Lyon',
+      pays: 'France',
+      commercialId: commercial2.id
+    },
+  });
+
+  const client4 = await prisma.user.upsert({
+    where: { email: 'sarah.lefebvre@email.fr' },
+    update: {},
+    create: {
+      email: 'sarah.lefebvre@email.fr',
+      name: 'Sarah Lefebvre',
+      password: await bcrypt.hash('client123', 10),
+      role: 'CLIENT',
+      phone: '+33 3 45 67 89 01',
+      address: '78 Boulevard des Roses, 13000 Marseille',
+      typeClient: 'PARTICULIER',
+      codePostal: '13000',
+      ville: 'Marseille',
+      pays: 'France',
+      commercialId: commercial2.id
     },
   });
 
@@ -124,6 +223,42 @@ async function main() {
     },
   });
 
+  const chantier3 = await prisma.chantier.create({
+    data: {
+      nom: 'Extension Bureaux Entreprise',
+      description: 'Extension de 300m² pour bureaux avec parking souterrain',
+      adresse: '45 Rue de la Paix, 69000 Lyon',
+      clientId: client3.id,
+      statut: 'EN_COURS',
+      progression: 40,
+      dateDebut: new Date('2024-02-01'),
+      dateFin: new Date('2024-09-30'),
+      budget: 450000,
+      superficie: '300m²',
+      photo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600',
+      lat: 45.7640,
+      lng: 4.8357
+    },
+  });
+
+  const chantier4 = await prisma.chantier.create({
+    data: {
+      nom: 'Rénovation Appartement Familial',
+      description: 'Rénovation complète d\'un appartement de 120m² avec cuisine ouverte',
+      adresse: '78 Boulevard des Roses, 13000 Marseille',
+      clientId: client4.id,
+      statut: 'TERMINE',
+      progression: 100,
+      dateDebut: new Date('2023-10-01'),
+      dateFin: new Date('2024-01-15'),
+      budget: 85000,
+      superficie: '120m²',
+      photo: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600',
+      lat: 43.2965,
+      lng: 5.3698
+    },
+  });
+
   // Créer quelques devis
   const devis1 = await prisma.devis.create({
     data: {
@@ -142,6 +277,46 @@ async function main() {
       notes: 'Devis pour la première phase de rénovation incluant la démolition et la reconstruction',
       conditionsVente: 'Paiement 30% à la commande, 40% à la livraison, 30% à 30 jours',
       modalitesPaiement: 'Virement bancaire ou chèque'
+    },
+  });
+
+  const devis2 = await prisma.devis.create({
+    data: {
+      numero: 'DEV-2024-002',
+      chantierId: chantier2.id,
+      clientId: client2.id,
+      type: 'DEVIS',
+      objet: 'Construction maison écologique',
+      montant: 280000,
+      totalHT: 280000,
+      totalTVA: 56000,
+      totalTTC: 336000,
+      tva: 20.0,
+      statut: 'ACCEPTE',
+      dateEcheance: new Date('2024-06-01'),
+      notes: 'Devis pour construction complète avec matériaux biosourcés',
+      conditionsVente: 'Paiement échelonné selon avancement',
+      modalitesPaiement: 'Virement bancaire'
+    },
+  });
+
+  const devis3 = await prisma.devis.create({
+    data: {
+      numero: 'DEV-2024-003',
+      chantierId: chantier3.id,
+      clientId: client3.id,
+      type: 'FACTURE',
+      objet: 'Extension bureaux - Tranche 1',
+      montant: 150000,
+      totalHT: 150000,
+      totalTVA: 30000,
+      totalTTC: 180000,
+      tva: 20.0,
+      statut: 'PAYE',
+      dateEcheance: new Date('2024-03-15'),
+      notes: 'Première tranche de l\'extension bureaux',
+      conditionsVente: 'Paiement à 30 jours',
+      modalitesPaiement: 'Virement bancaire'
     },
   });
 
@@ -242,10 +417,23 @@ async function main() {
   });
 
   console.log('✅ Database seeded successfully');
-  console.log(`👤 Admin user: admin@chantierpro.fr / admin123`);
-  console.log(`👨‍💼 Commercial: commercial@chantierpro.fr / commercial123`);
-  console.log(`👥 Clients: marie.dubois@email.fr, pierre.martin@email.fr`);
-  console.log(`🏗️ Created ${2} chantiers with sample data`);
+  console.log('\n🔐 COMPTES DE TEST CRÉÉS :');
+  console.log(`👤 ADMIN: admin@chantierpro.fr / admin123`);
+  console.log(`👨‍💼 COMMERCIAL 1: commercial@chantierpro.fr / commercial123`);
+  console.log(`👩‍💼 COMMERCIAL 2: sophie.bernard@chantierpro.fr / commercial123`);
+  console.log(`👷‍♂️ OUVRIER 1: michel.roux@chantierpro.fr / ouvrier123`);
+  console.log(`👷‍♂️ OUVRIER 2: alain.moreau@chantierpro.fr / ouvrier123`);
+  console.log(`👥 CLIENT 1: marie.dubois@email.fr / client123`);
+  console.log(`👥 CLIENT 2: pierre.martin@email.fr / client123`);
+  console.log(`👥 CLIENT 3: jean.durand@email.fr / client123`);
+  console.log(`👥 CLIENT 4: sarah.lefebvre@email.fr / client123`);
+  console.log(`\n🏗️ DONNÉES CRÉÉES :`);
+  console.log(`- ${4} chantiers avec différents statuts`);
+  console.log(`- ${3} devis/factures`);
+  console.log(`- ${3} lignes de devis`);
+  console.log(`- ${3} étapes de chantier`);
+  console.log(`- ${3} prix dans la bibliothèque`);
+  console.log(`\n🎯 PRÊT POUR LES TESTS !`);
 }
 
 main()
