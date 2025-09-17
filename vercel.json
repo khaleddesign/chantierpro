@@ -7,7 +7,9 @@
   "env": {
     "NEXTAUTH_SECRET": "chantierpro-production-secret-key-2025-very-long-and-secure",
     "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
-    "DATABASE_URL": "postgresql://postgres:[YOUR-PASSWORD]@db.oikxkloiqxhwwtkfpbkb.supabase.co:5432/postgres",
+    "DATABASE_URL": "postgresql://postgres:Mourouj1239!@db.oikxkloiqxhwwtkfpbkb.supabase.co:5432/postgres",
+    "SUPABASE_URL": "https://oikxkloiqxhwwtkfpbkb.supabase.co",
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pa3hrbG9pcXhod3d0a2ZwYmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzgwODksImV4cCI6MjA3MzcxNDA4OX0.YJJE1j09SRDiMNBW2rfGcS9-JmLMFsrvwxjmTKBSpUM",
     "REDIS_DISABLED": "true",
     "NODE_ENV": "production"
   },
@@ -15,7 +17,9 @@
     "env": {
       "NEXTAUTH_SECRET": "chantierpro-production-secret-key-2025-very-long-and-secure",
       "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
-      "DATABASE_URL": "postgresql://postgres:[YOUR-PASSWORD]@db.oikxkloiqxhwwtkfpbkb.supabase.co:5432/postgres",
+      "DATABASE_URL": "postgresql://postgres:Mourouj1239!@db.oikxkloiqxhwwtkfpbkb.supabase.co:5432/postgres",
+      "SUPABASE_URL": "https://oikxkloiqxhwwtkfpbkb.supabase.co",
+      "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pa3hrbG9pcXhod3d0a2ZwYmtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMzgwODksImV4cCI6MjA3MzcxNDA4OX0.YJJE1j09SRDiMNBW2rfGcS9-JmLMFsrvwxjmTKBSpUM",
       "REDIS_DISABLED": "true"
     }
   }
