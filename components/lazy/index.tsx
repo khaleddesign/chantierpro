@@ -7,11 +7,15 @@ export function createLazyComponent<T = Record<string, any>>(
 ) {
   const LazyComponent = lazy(importFn);
 
-  return (props: T) => (
+  const WrappedComponent = (props: T) => (
     <Suspense fallback={<FallbackComponent />}>
       <LazyComponent {...(props as any)} />
     </Suspense>
   );
+  
+  WrappedComponent.displayName = 'LazyWrappedComponent';
+  
+  return WrappedComponent;
 }
 
 // Composants de planning lazy-loaded
@@ -68,6 +72,8 @@ export function createLazyComponentFromPath<T = Record<string, any>>(
       </div>
     </div>
   );
+  
+  FallbackComponent.displayName = 'FallbackComponent';
 
   return createLazyComponent<T extends React.ComponentType<any> ? React.ComponentProps<T> : T>(
     () => import(componentPath),
