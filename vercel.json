@@ -1,0 +1,22 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "devCommand": "npm run dev",
+  "env": {
+    "NEXTAUTH_SECRET": "chantierpro-production-secret-key-2025-very-long-and-secure",
+    "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
+    "DATABASE_URL": "file:./tmp/dev.db",
+    "REDIS_DISABLED": "true",
+    "NODE_ENV": "production"
+  },
+  "build": {
+    "env": {
+      "NEXTAUTH_SECRET": "chantierpro-production-secret-key-2025-very-long-and-secure",
+      "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
+      "DATABASE_URL": "file:./tmp/dev.db",
+      "REDIS_DISABLED": "true"
+    }
+  }
+}
