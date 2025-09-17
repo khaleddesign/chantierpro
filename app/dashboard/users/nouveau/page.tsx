@@ -77,8 +77,12 @@ export default function NewUserPage() {
     if (user?.role === 'ADMIN') {
       loadCommerciaux();
     } else if (user?.role === 'COMMERCIAL') {
-      // Auto-assigner le commercial connecté
-      setFormData(prev => ({ ...prev, commercialId: user.id }));
+      // Forcer le rôle CLIENT et auto-assigner le commercial connecté
+      setFormData(prev => ({ 
+        ...prev, 
+        role: 'CLIENT',
+        commercialId: user.id 
+      }));
     }
   }, [user]);
 
@@ -159,6 +163,11 @@ export default function NewUserPage() {
   };
 
   const handleInputChange = (field: keyof UserFormData, value: string) => {
+    // Empêcher les commerciaux de changer le rôle
+    if (field === 'role' && user?.role === 'COMMERCIAL') {
+      return; // Ignorer le changement de rôle pour les commerciaux
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
     // Effacer l'erreur quand l'utilisateur commence à taper
     if (errors[field]) {

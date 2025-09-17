@@ -98,8 +98,8 @@ export default function NouveauChantierPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nom.trim() || !formData.clientId || !formData.description.trim() || !formData.adresse.trim() || !formData.dateDebut || !formData.dateFin || !formData.budgetEstime || !formData.superficie) {
-      showError('Erreur', 'Tous les champs obligatoires doivent être remplis (nom, description, adresse, client, dates, budget, superficie)');
+    if (!formData.nom.trim() || !formData.clientId || !formData.description.trim() || !formData.adresse.trim() || !formData.dateDebut || !formData.dateFin || !formData.budgetEstime) {
+      showError('Erreur', 'Tous les champs obligatoires doivent être remplis (nom, description, adresse, client, dates, budget)');
       return;
     }
 
@@ -110,8 +110,8 @@ export default function NouveauChantierPage() {
       clientId: formData.clientId,
       dateDebut: formData.dateDebut,
       dateFin: formData.dateFin,
-      budget: parseFloat(formData.budgetEstime),
-      superficie: formData.superficie,
+      budget: parseFloat(formData.budgetEstime) || 0,
+      superficie: formData.superficie ? formData.superficie.toString() : "",
       photo: formData.photo || undefined
     };
 

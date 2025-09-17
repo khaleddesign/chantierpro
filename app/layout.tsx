@@ -32,6 +32,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
+      <head>
+        <link rel="stylesheet" href="/styles.css" />
+      </head>
       <body>
         <Providers>
           {children}

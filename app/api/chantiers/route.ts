@@ -52,9 +52,8 @@ export async function GET(request: NextRequest) {
       where.statut = status as ChantierStatus;
     }
 
-    if (clientId) {
-      where.clientId = clientId;
-    }
+    // clientId est déjà géré dans le filtrage par rôle ci-dessus
+    // Pas besoin de l'ajouter ici car cela créerait une faille de sécurité
 
     // Récupération des chantiers avec pagination
     const [chantiers, total] = await Promise.all([
@@ -152,8 +151,8 @@ export async function POST(request: NextRequest) {
     if (!clientId) missingFields.push('clientId');
     if (!dateDebut) missingFields.push('dateDebut');
     if (!dateFin) missingFields.push('dateFin');
-    if (!budget || budget === 0) missingFields.push('budget');
-    if (!superficie) missingFields.push('superficie');
+    if (!budget || budget < 0) missingFields.push('budget'); // Permettre budget = 0
+    // superficie est optionnel selon le schéma Zod
     
     if (missingFields.length > 0) {
       console.log('Champs manquants:', missingFields, 'Données reçues:', { nom, description, adresse, clientId, dateDebut, dateFin, budget, superficie });

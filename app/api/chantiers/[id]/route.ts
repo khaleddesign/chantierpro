@@ -113,11 +113,11 @@ export async function GET(
     }
 
     // Vérifier les permissions (plus permissif pour les commerciaux)
-    const hasAccess = 
+    const hasAccess =
       session.user.role === "ADMIN" ||
-      session.user.role === "COMMERCIAL" ||
-      (session.user.role === "CLIENT" && chantier.clientId === session.user.id) ||
-      chantier.assignees.some(assignee => assignee.id === session.user.id);
+      (chantier.clientId === session.user.id) || // Le client propriétaire
+      (session.user.role === "COMMERCIAL" && chantier.client?.commercialId === session.user.id) || // Le commercial assigné au client
+      (chantier.assignees.some(a => a.id === session.user.id)); // L'utilisateur est assigné au chantier
 
     if (!hasAccess) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });

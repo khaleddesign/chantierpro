@@ -65,7 +65,7 @@ export async function GET(
     const hasAccess = 
       session.user.role === "ADMIN" ||
       (session.user.role === "CLIENT" && devis.clientId === session.user.id) ||
-      (session.user.role === "COMMERCIAL" && devis.client.id === session.user.id);
+      (session.user.role === "COMMERCIAL" && devis.client.commercialId === session.user.id);
 
     if (!hasAccess) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });

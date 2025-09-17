@@ -143,8 +143,8 @@ export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nom.trim() || !formData.clientId || !formData.description.trim() || !formData.adresse.trim() || !formData.dateDebut || !formData.dateFin || !formData.budgetEstime || !formData.superficie) {
-      showError('Erreur', 'Tous les champs obligatoires doivent être remplis (nom, description, adresse, client, dates, budget, superficie)');
+    if (!formData.nom.trim() || !formData.clientId || !formData.description.trim() || !formData.adresse.trim() || !formData.dateDebut || !formData.dateFin || !formData.budgetEstime) {
+      showError('Erreur', 'Tous les champs obligatoires doivent être remplis (nom, description, adresse, client, dates, budget)');
       return;
     }
 
@@ -155,8 +155,8 @@ export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps
       clientId: formData.clientId,
       dateDebut: formData.dateDebut,
       dateFin: formData.dateFin,
-      budget: parseFloat(formData.budgetEstime),
-      superficie: formData.superficie.toString(),
+      budget: parseFloat(formData.budgetEstime) || 0,
+      superficie: formData.superficie ? formData.superficie.toString() : "",
     };
 
     try {

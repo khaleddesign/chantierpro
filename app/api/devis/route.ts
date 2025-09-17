@@ -30,9 +30,19 @@ export async function GET(request: NextRequest) {
     if (session.user.role === "CLIENT") {
       where.clientId = session.user.id;
     } else if (session.user.role === "COMMERCIAL") {
-      where.client = {
-        commercialId: session.user.id
-      };
+      const commercialWhereClause: any = { commercialId: session.user.id };
+      
+      if (clientId) {
+        const client = await prisma.user.findFirst({
+          where: { id: clientId, commercialId: session.user.id }
+        });
+        if (!client) {
+          return NextResponse.json({ error: "Accès refusé: Ce client ne vous est pas assigné." }, { status: 403 });
+        }
+        commercialWhereClause.id = clientId;
+      }
+      
+      where.client = commercialWhereClause;
     }
 
     // Filtres additionnels
@@ -52,9 +62,8 @@ export async function GET(request: NextRequest) {
       where.type = type as DevisType;
     }
 
-    if (clientId) {
-      where.clientId = clientId;
-    }
+    // clientId est déjà géré dans la vérification de sécurité ci-dessus
+    // Pas besoin de l'ajouter ici car cela créerait une faille de sécurité
 
     if (chantierId) {
       where.chantierId = chantierId;

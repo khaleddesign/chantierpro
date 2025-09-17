@@ -48,6 +48,24 @@ export async function GET(request: NextRequest) {
     // Construire les filtres
     const where: any = {};
     
+    // Vérifications de sécurité par rôle
+    if (session.user.role === "CLIENT" && clientId !== session.user.id) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
+
+    if (session.user.role === "COMMERCIAL") {
+      if (clientId) {
+        const client = await prisma.user.findFirst({
+          where: { id: clientId, commercialId: session.user.id }
+        });
+        if (!client) {
+          return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+        }
+      }
+      // Si aucun clientId n'est fourni, la requête doit filtrer par commercialId
+      where.client = { commercialId: session.user.id };
+    }
+    
     if (clientId) where.clientId = clientId;
     if (chantierId) where.chantierId = chantierId;
     if (type) where.type = type;

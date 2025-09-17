@@ -133,7 +133,7 @@ export function LoginForm() {
             <Button
               type="submit"
               className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg transition-all duration-200"
-              disabled={isSubmitting || !credentials.email || !credentials.password}
+              disabled={isSubmitting || !credentials.email?.trim() || !credentials.password?.trim()}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">

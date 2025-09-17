@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { requireAuth, logUserAction } from '@/lib/api-helpers';
 import { withRateLimit } from '@/lib/rate-limiter';
 import { processImageComplete, isImageFile, getOptimizedFilename, calculateCompressionRatio } from '@/lib/image-optimizer';
+import { fileTypeFromBuffer } from 'file-type';
 
 async function uploadHandler(request: NextRequest) {
   try {
@@ -20,35 +21,43 @@ async function uploadHandler(request: NextRequest) {
       );
     }
 
-    // Validation du type de fichier
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    // --- DÉBUT DE LA ZONE DE CORRECTION ---
+
+    // 1. Validation de la taille côté serveur (ex: 10MB)
+    const MAX_SIZE_IN_BYTES = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_SIZE_IN_BYTES) {
       return NextResponse.json(
-        { error: 'Type de fichier non autorisé. Utilisez JPG, PNG ou WebP.' },
-        { status: 400 }
+        { error: `Fichier trop volumineux (max ${MAX_SIZE_IN_BYTES / 1024 / 1024}MB)` },
+        { status: 413 } // 413 Payload Too Large
       );
     }
 
-    // Validation de la taille (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: 'Fichier trop volumineux. Taille maximale : 5MB.' },
-        { status: 400 }
-      );
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // 2. Validation du type MIME réel basé sur le contenu (magic numbers)
+    const detectedType = await fileTypeFromBuffer(buffer);
+    const allowedTypes = [
+        'image/jpeg', 
+        'image/png', 
+        'image/webp', 
+        'application/pdf'
+    ];
+
+    if (!detectedType || !allowedTypes.includes(detectedType.mime)) {
+        return NextResponse.json(
+            { error: 'Type de fichier non autorisé. Types acceptés : JPEG, PNG, WEBP, PDF.' },
+            { status: 415 } // 415 Unsupported Media Type
+        );
     }
+
+    // --- FIN DE LA ZONE DE CORRECTION ---
 
     // Créer le dossier uploads s'il n'existe pas
     const uploadDir = join(process.cwd(), 'public', 'uploads', 'chantiers');
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
-
-    // Convertir le fichier en buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    let finalBuffer = buffer;
     let finalFileName: string;
     let compressionInfo: { ratio?: number; originalSize: number; finalSize: number } = {
       originalSize: buffer.length,
@@ -56,7 +65,7 @@ async function uploadHandler(request: NextRequest) {
     };
 
     // Optimiser l'image si c'est un fichier image
-    if (isImageFile(file.type)) {
+    if (isImageFile(detectedType.mime)) {
       try {
         const optimized = await processImageComplete(buffer, {
           maxWidth: 1920,
@@ -114,8 +123,8 @@ async function uploadHandler(request: NextRequest) {
         originalSize: file.size, 
         finalSize: compressionInfo.finalSize,
         compressionRatio: compressionInfo.ratio,
-        fileType: file.type,
-        optimized: isImageFile(file.type)
+        fileType: detectedType.mime,
+        optimized: isImageFile(detectedType.mime)
       }
     );
 
@@ -125,9 +134,9 @@ async function uploadHandler(request: NextRequest) {
       originalSize: file.size,
       finalSize: compressionInfo.finalSize,
       compressionRatio: compressionInfo.ratio || 0,
-      type: isImageFile(file.type) ? 'image/webp' : file.type,
-      optimized: isImageFile(file.type),
-      thumbnailUrl: isImageFile(file.type) ? `/uploads/chantiers/${finalFileName.replace('.webp', '-thumb.webp')}` : null
+      type: isImageFile(detectedType.mime) ? 'image/webp' : detectedType.mime,
+      optimized: isImageFile(detectedType.mime),
+      thumbnailUrl: isImageFile(detectedType.mime) ? `/uploads/chantiers/${finalFileName.replace('.webp', '-thumb.webp')}` : null
     });
 
   } catch (error: any) {

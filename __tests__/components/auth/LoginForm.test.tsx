@@ -3,23 +3,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LoginForm } from '@/components/auth/LoginForm'
 
-// Mock the useAuth hook
-const mockLogin = jest.fn()
-const mockClearError = jest.fn()
-
-jest.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({
-    login: mockLogin,
-    isLoading: false,
-    error: null,
-    clearError: mockClearError,
-  })
+// Mock NextAuth
+jest.mock('next-auth/react', () => ({
+  signIn: jest.fn(),
+  useSession: () => ({ data: null, status: 'unauthenticated' })
 }))
 
-// Mock ClientOnly component to render children immediately
-jest.mock('@/components/ui/ClientOnly', () => ({
-  ClientOnly: ({ children }: { children: React.ReactNode }) => children
-}))
+const mockSignIn = jest.mocked(require('next-auth/react').signIn)
 
 describe('LoginForm Integration', () => {
   beforeEach(() => {
@@ -38,7 +28,7 @@ describe('LoginForm Integration', () => {
 
   it('handles form submission with valid credentials', async () => {
     const user = userEvent.setup()
-    mockLogin.mockResolvedValue(true)
+    mockSignIn.mockResolvedValue({ ok: true, error: null })
     
     render(<LoginForm />)
     
@@ -50,8 +40,11 @@ describe('LoginForm Integration', () => {
     await user.type(passwordInput, 'password123')
     await user.click(submitButton)
     
-    expect(mockClearError).toHaveBeenCalled()
-    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123')
+    expect(mockSignIn).toHaveBeenCalledWith('credentials', {
+      email: 'test@example.com',
+      password: 'password123',
+      redirect: false
+    })
   })
 
   it('prevents form submission with empty fields', async () => {
@@ -63,7 +56,7 @@ describe('LoginForm Integration', () => {
     
     await user.click(submitButton)
     
-    expect(mockLogin).not.toHaveBeenCalled()
+    expect(mockSignIn).not.toHaveBeenCalled()
   })
 
   it('prevents form submission with only email', async () => {
@@ -77,7 +70,7 @@ describe('LoginForm Integration', () => {
     await user.type(emailInput, 'test@example.com')
     await user.click(submitButton)
     
-    expect(mockLogin).not.toHaveBeenCalled()
+    expect(mockSignIn).not.toHaveBeenCalled()
   })
 
   it('prevents form submission with only password', async () => {
@@ -91,7 +84,7 @@ describe('LoginForm Integration', () => {
     await user.type(passwordInput, 'password123')
     await user.click(submitButton)
     
-    expect(mockLogin).not.toHaveBeenCalled()
+    expect(mockSignIn).not.toHaveBeenCalled()
   })
 
   it('toggles password visibility', async () => {
@@ -114,60 +107,23 @@ describe('LoginForm Integration', () => {
     expect(passwordInput).toHaveAttribute('type', 'password')
   })
 
-  it('clears error when user types', async () => {
+  it('displays error message when signIn fails', async () => {
     const user = userEvent.setup()
-    
-    // Mock an error state
-    jest.mocked(require('@/hooks/useAuth').useAuth).mockReturnValue({
-      login: mockLogin,
-      isLoading: false,
-      error: 'Invalid credentials',
-      clearError: mockClearError,
-    })
-    
-    render(<LoginForm />)
-    
-    const emailInput = screen.getByLabelText(/email/i)
-    
-    await user.type(emailInput, 'test@example.com')
-    
-    expect(mockClearError).toHaveBeenCalled()
-  })
-
-  it('disables form when loading', () => {
-    // Mock loading state
-    jest.mocked(require('@/hooks/useAuth').useAuth).mockReturnValue({
-      login: mockLogin,
-      isLoading: true,
-      error: null,
-      clearError: mockClearError,
-    })
+    mockSignIn.mockResolvedValue({ ok: false, error: 'Invalid credentials' })
     
     render(<LoginForm />)
     
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/mot de passe/i)
-    const submitButton = screen.getByRole('button')
+    const submitButton = screen.getByRole('button', { name: /se connecter/i })
     
-    expect(emailInput).toBeDisabled()
-    expect(passwordInput).toBeDisabled()
-    expect(submitButton).toBeDisabled()
-    expect(submitButton).toHaveTextContent(/connexion/i)
-  })
-
-  it('displays error message when present', () => {
-    // Mock error state
-    jest.mocked(require('@/hooks/useAuth').useAuth).mockReturnValue({
-      login: mockLogin,
-      isLoading: false,
-      error: 'Identifiants invalides',
-      clearError: mockClearError,
+    await user.type(emailInput, 'test@example.com')
+    await user.type(passwordInput, 'password123')
+    await user.click(submitButton)
+    
+    await waitFor(() => {
+      expect(screen.getByText('Identifiants invalides')).toBeInTheDocument()
     })
-    
-    render(<LoginForm />)
-    
-    expect(screen.getByText('Identifiants invalides')).toBeInTheDocument()
-    expect(screen.getByRole('alert')).toBeInTheDocument()
   })
 
   it('has register link', () => {
@@ -180,7 +136,7 @@ describe('LoginForm Integration', () => {
 
   it('submits form on Enter key press', async () => {
     const user = userEvent.setup()
-    mockLogin.mockResolvedValue(true)
+    mockSignIn.mockResolvedValue({ ok: true, error: null })
     
     render(<LoginForm />)
     
@@ -191,7 +147,11 @@ describe('LoginForm Integration', () => {
     await user.type(passwordInput, 'password123')
     await user.keyboard('{Enter}')
     
-    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123')
+    expect(mockSignIn).toHaveBeenCalledWith('credentials', {
+      email: 'test@example.com',
+      password: 'password123',
+      redirect: false
+    })
   })
 
   it('button is disabled when fields are empty', () => {

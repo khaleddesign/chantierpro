@@ -17,7 +17,8 @@
     "test:all": "npm run test && npm run test:e2e",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "verify": "node verify.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -38,6 +39,7 @@
     "@types/pg": "^8.15.5",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
+    "file-type": "^21.0.0",
     "html2canvas": "^1.4.1",
     "ioredis": "^5.7.0",
     "jspdf": "^3.0.2",

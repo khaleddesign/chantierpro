@@ -70,9 +70,17 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub!;
-        session.user.role = token.role as Role;
-        session.user.company = token.company as string;
+        // Récupérer l'utilisateur réel depuis la base de données pour obtenir l'ID correct
+        const user = await prisma.user.findUnique({
+          where: { email: session.user.email! },
+          select: { id: true, role: true, company: true }
+        });
+        
+        if (user) {
+          session.user.id = user.id;
+          session.user.role = user.role as Role;
+          session.user.company = user.company as string;
+        }
       }
       return session;
     },

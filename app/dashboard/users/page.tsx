@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Role } from "@prisma/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -45,6 +46,7 @@ const roleLabels = {
 export default function UsersPage() {
   const { user } = useAuth();
   const { success, error: showError } = useToastContext();
+  const router = useRouter();
   
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -420,11 +422,11 @@ export default function UsersPage() {
                     
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleEditUser(userItem.id)}>
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/users/${userItem.id}`)}>
                           <Eye size={14} />
                         </Button>
                         
-                        <Button size="sm" variant="outline" onClick={() => handleEditUser(userItem.id)}>
+                        <Button size="sm" variant="outline" onClick={() => router.push(`/dashboard/users/${userItem.id}`)}>
                           <Edit size={14} />
                         </Button>
                         

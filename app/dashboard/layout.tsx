@@ -14,10 +14,7 @@ export default async function Dashboard({
     redirect("/auth/signin");
   }
 
-  // Rediriger les clients vers leur espace dédié
-  if (session.user.role === "CLIENT") {
-    redirect("/dashboard/client");
-  }
+  // Laisser le middleware gérer les redirections par rôle pour éviter les conflits
 
   return (
     <DashboardLayout user={session.user}>
