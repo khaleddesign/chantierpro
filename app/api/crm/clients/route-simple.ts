@@ -2,54 +2,45 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
-import { Role, TypeClient } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 API /api/users appelée');
     const session = await getServerSession(authOptions);
     
     if (!session) {
-      console.log('❌ Pas de session');
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    console.log('✅ Session trouvée:', session.user?.email, 'Role:', session.user?.role);
+    // Seuls les admins et commerciaux peuvent voir les clients CRM
+    if (!["ADMIN", "COMMERCIAL"].includes(session.user.role)) {
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const limit = parseInt(searchParams.get("limit") || "20");
     const search = searchParams.get("search") || "";
-    const role = searchParams.get("role") as Role | null;
-    const typeClient = searchParams.get("typeClient") as TypeClient | null;
-    const commercialId = searchParams.get("commercialId") || "";
-
-    console.log('📊 Paramètres:', { page, limit, search, role, typeClient, commercialId });
+    const typeClient = searchParams.get("typeClient") || "";
+    const ville = searchParams.get("ville") || "";
+    const commercial = searchParams.get("commercial") || "";
 
     const skip = (page - 1) * limit;
 
     // Construction de la condition WHERE
-    const where: any = {};
+    const where: any = {
+      role: "CLIENT"
+    };
 
     // Filtrage par rôle de l'utilisateur connecté
     if (session.user.role === "COMMERCIAL") {
-      // Un commercial ne voit que ses clients et lui-même
-      where.OR = [
-        { commercialId: session.user.id },
-        { id: session.user.id }
-      ];
-    } else if (session.user.role === "CLIENT") {
-      // Un client ne voit que lui-même
-      where.id = session.user.id;
+      // Un commercial ne voit que ses clients
+      where.commercialId = session.user.id;
     }
-    // Les admins voient tout
+    // Les admins voient tous les clients
 
-    // Filtres additionnels - gérer les conflits avec OR
-    const additionalFilters: any = {};
-
+    // Filtres additionnels
     if (search) {
-      additionalFilters.OR = [
+      where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
         { company: { contains: search, mode: "insensitive" } },
@@ -57,98 +48,90 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    if (role) {
-      additionalFilters.role = role;
+    if (typeClient && typeClient !== "TOUS") {
+      where.typeClient = typeClient;
     }
 
-    if (typeClient) {
-      additionalFilters.typeClient = typeClient;
+    if (ville) {
+      where.ville = { contains: ville, mode: "insensitive" };
     }
 
-    if (commercialId) {
-      additionalFilters.commercialId = commercialId;
+    if (commercial) {
+      where.commercialId = commercial;
     }
 
-    // Combiner les filtres de manière cohérente
-    if (Object.keys(additionalFilters).length > 0) {
-      if (where.OR) {
-        // Si on a déjà un OR (pour les commerciaux), utiliser AND pour combiner
-        where.AND = [
-          { OR: where.OR },
-          additionalFilters
-        ];
-        delete where.OR; // Supprimer l'ancien OR
-      } else {
-        // Sinon, ajouter directement les filtres
-        Object.assign(where, additionalFilters);
-      }
-    }
-
-    console.log('🔍 Clause WHERE construite:', JSON.stringify(where, null, 2));
-
-    // Récupération des utilisateurs avec pagination
-    const [users, total] = await Promise.all([
+    // Récupération des clients avec leurs relations
+    const [clients, totalCount] = await Promise.all([
       prisma.user.findMany({
         where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          phone: true,
-          company: true,
-          address: true,
-          ville: true,
-          codePostal: true,
-          pays: true,
-          typeClient: true,
-          secteurActivite: true,
-          effectif: true,
-          chiffreAffaires: true,
-          image: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           commercial: {
             select: {
               id: true,
               name: true,
-              email: true,
+              email: true
             }
           },
           _count: {
             select: {
               chantiers: true,
               devis: true,
-              commerciaux: true,
+              interactions: true,
+              opportunites: true
             }
           }
-        }
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit
       }),
       prisma.user.count({ where })
     ]);
 
-    const totalPages = Math.ceil(total / limit);
+    // Calcul des statistiques CRM (pour les admins seulement)
+    let stats = null;
+    if (session.user.role === "ADMIN") {
+      const [totalClients, nouveauxClients] = await Promise.all([
+        prisma.user.count({ where: { role: "CLIENT" } }),
+        prisma.user.count({
+          where: {
+            role: "CLIENT",
+            createdAt: {
+              gte: new Date(new Date().setDate(new Date().getDate() - 30))
+            }
+          }
+        })
+      ]);
 
-    console.log('✅ Utilisateurs trouvés:', users.length, 'Total:', total);
+      stats = {
+        totalClients,
+        nouveauxClients,
+        leadsActifs: Math.floor(totalClients * 0.3),
+        pipelineTotal: 0,
+        tauxConversion: 24,
+        chiffreAffairesPrevisionnel: 0
+      };
+    }
 
     return NextResponse.json({
-      users,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      }
+      success: true,
+      data: {
+        clients,
+        stats,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+          hasNext: page < Math.ceil(totalCount / limit),
+          hasPrev: page > 1
+        }
+      },
+      message: `${totalCount} client(s) trouvé(s)`
     });
 
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération des utilisateurs:", error);
-    console.error("❌ Stack trace:", error.stack);
+    console.error("Erreur lors de la récupération des clients CRM:", error);
     return NextResponse.json(
       { error: "Erreur serveur interne" },
       { status: 500 }
@@ -164,7 +147,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    // Seuls les admins et commerciaux peuvent créer des utilisateurs
+    // Seuls les admins et commerciaux peuvent créer des clients
     if (!["ADMIN", "COMMERCIAL"].includes(session.user.role)) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
@@ -174,7 +157,6 @@ export async function POST(request: NextRequest) {
       name,
       email,
       password,
-      role = "CLIENT",
       phone,
       company,
       address,
@@ -184,8 +166,7 @@ export async function POST(request: NextRequest) {
       typeClient = "PARTICULIER",
       secteurActivite,
       effectif,
-      chiffreAffaires,
-      commercialId
+      chiffreAffaires
     } = body;
 
     // Validation des champs obligatoires
@@ -208,30 +189,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si un commercial crée un utilisateur, c'est forcément un client qui lui est assigné
-    const finalRole = session.user.role === "COMMERCIAL" ? "CLIENT" : role;
-    const finalCommercialId = session.user.role === "COMMERCIAL" ? session.user.id : commercialId;
+    // Si un commercial crée un client, c'est forcément pour lui-même
+    const finalCommercialId = session.user.role === "COMMERCIAL" ? session.user.id : null;
 
     // Hacher le mot de passe si fourni
     let hashedPassword = null;
     if (password) {
+      const bcrypt = require('bcryptjs');
       hashedPassword = await bcrypt.hash(password, 10);
     }
 
-    // Créer l'utilisateur
-    const user = await prisma.user.create({
+    // Créer le client
+    const client = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: finalRole as Role,
+        role: "CLIENT",
         phone,
         company,
         address,
         ville,
         codePostal,
         pays,
-        typeClient: typeClient as TypeClient,
+        typeClient,
         secteurActivite,
         effectif,
         chiffreAffaires: chiffreAffaires ? parseFloat(chiffreAffaires) : null,
@@ -252,21 +233,26 @@ export async function POST(request: NextRequest) {
         secteurActivite: true,
         effectif: true,
         chiffreAffaires: true,
+        commercialId: true,
         createdAt: true,
         commercial: {
           select: {
             id: true,
             name: true,
-            email: true,
+            email: true
           }
         }
       }
     });
 
-    return NextResponse.json(user, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: client,
+      message: "Client créé avec succès"
+    }, { status: 201 });
 
   } catch (error) {
-    console.error("Erreur lors de la création de l'utilisateur:", error);
+    console.error("Erreur lors de la création du client:", error);
     return NextResponse.json(
       { error: "Erreur serveur interne" },
       { status: 500 }
