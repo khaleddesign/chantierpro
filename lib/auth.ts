@@ -13,9 +13,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log('🔐 NextAuth authorize called with:', { 
-          email: credentials?.email, 
-          hasPassword: !!credentials?.password 
+        console.log('🔐 NextAuth authorize called with:', {
+          email: credentials?.email,
+          hasPassword: !!credentials?.password,
+          databaseUrl: process.env.DATABASE_URL?.substring(0, 50) + '...'
         });
 
         if (!credentials?.email || !credentials?.password) {
