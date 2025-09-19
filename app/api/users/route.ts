@@ -169,9 +169,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 API POST /api/users appelée');
+    console.log('Database URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
+    
     const session = await getServerSession(authOptions);
     
+    console.log('🔍 Session récupérée:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email,
+      userRole: session?.user?.role
+    });
+    
     if (!session) {
+      console.log('❌ Aucune session trouvée');
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
