@@ -131,24 +131,6 @@ export default function ChantiersPage() {
     return 'from-green-500 to-emerald-500';
   };
 
-  const handleFormSuccess = async () => {
-    // Éviter les rechargements multiples
-    setLoading(true);
-    
-    try {
-      await fetchChantiers({
-        page: pagination.page,
-        limit: pagination.limit,
-        search: search || undefined,
-        status: statusFilter === 'TOUS' ? undefined : statusFilter,
-      });
-    } catch (error) {
-      console.warn('Erreur lors du rechargement:', error);
-      setError('Erreur lors du rechargement des données');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -210,28 +192,25 @@ export default function ChantiersPage() {
   };
 
   const handleFormSuccess = async () => {
-    // Petit délai pour permettre à la transaction de se finaliser
-    setTimeout(async () => {
-      try {
-        await fetchChantiers({
-          page: pagination.page,
-          limit: pagination.limit,
-          search: search || undefined,
-          status: statusFilter,
-        });
-      } catch (error) {
-        console.warn('Erreur lors du rechargement des chantiers après modification:', error);
-        // On peut essayer de recharger une seconde fois en cas d'échec
-        setTimeout(() => {
-          fetchChantiers({
-            page: pagination.page,
-            limit: pagination.limit,
-            search: search || undefined,
-            status: statusFilter,
-          });
-        }, 1000);
-      }
-    }, 300);
+    // Éviter les rechargements multiples
+    setLoading(true);
+    
+    try {
+      await fetchChantiers({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: search || undefined,
+        status: statusFilter === 'TOUS' ? undefined : statusFilter,
+      });
+    } catch (error) {
+      console.warn('Erreur lors du rechargement:', error);
+      setError('Erreur lors du rechargement des données');
+    } finally {
+      setLoading(false);
+    }
+    
+    setShowForm(false);
+    setEditingChantier(null);
   };
 
   // Statistiques des chantiers
