@@ -26,6 +26,15 @@ export async function GET(request: NextRequest) {
     const commercialId = searchParams.get("commercialId") || "";
 
     console.log('📊 Paramètres:', { page, limit, search, role, typeClient, commercialId });
+    
+    // Debug spécifique pour role=CLIENT
+    if (role === 'CLIENT') {
+      console.log('🔍 DEBUG role=CLIENT - Session user:', {
+        id: session.user.id,
+        email: session.user.email,
+        role: session.user.role
+      });
+    }
 
     const skip = (page - 1) * limit;
 
