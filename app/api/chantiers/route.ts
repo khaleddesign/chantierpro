@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
           clientId,
           dateDebut: new Date(dateDebut),
           dateFin: new Date(dateFin),
-          budget: parseFloat(budget),
+          budget: budget,
           superficie,
           photo,
           lat: lat ? parseFloat(lat) : null,

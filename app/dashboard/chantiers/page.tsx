@@ -192,9 +192,6 @@ export default function ChantiersPage() {
   };
 
   const handleFormSuccess = async () => {
-    // Éviter les rechargements multiples
-    setLoading(true);
-    
     try {
       await fetchChantiers({
         page: pagination.page,
@@ -204,9 +201,6 @@ export default function ChantiersPage() {
       });
     } catch (error) {
       console.warn('Erreur lors du rechargement:', error);
-      setError('Erreur lors du rechargement des données');
-    } finally {
-      setLoading(false);
     }
     
     setShowForm(false);

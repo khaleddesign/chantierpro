@@ -6,6 +6,14 @@ import bcrypt from "bcrypt";
 import { Role, TypeClient } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get("page") || "1");
+  const limit = parseInt(searchParams.get("limit") || "10");
+  const search = searchParams.get("search") || "";
+  const role = searchParams.get("role") as Role | null;
+  const typeClient = searchParams.get("typeClient") as TypeClient | null;
+  const commercialId = searchParams.get("commercialId") || "";
+
   try {
     console.log('🔍 API /api/users appelée');
     const session = await getServerSession(authOptions);
@@ -16,14 +24,6 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ Session trouvée:', session.user?.email, 'Role:', session.user?.role);
-
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const search = searchParams.get("search") || "";
-    const role = searchParams.get("role") as Role | null;
-    const typeClient = searchParams.get("typeClient") as TypeClient | null;
-    const commercialId = searchParams.get("commercialId") || "";
 
     console.log('📊 Paramètres:', { page, limit, search, role, typeClient, commercialId });
     

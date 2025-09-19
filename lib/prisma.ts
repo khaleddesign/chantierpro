@@ -10,12 +10,6 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
     db: {
       url: process.env.DATABASE_URL
     }
-  },
-  // Configuration pour éviter les problèmes de prepared statements avec le pooling
-  __internal: {
-    engine: {
-      binaryTargets: ['native']
-    }
   }
 })
 
