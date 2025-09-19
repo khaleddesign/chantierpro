@@ -1,149 +1,106 @@
+// app/api/users/route.ts - Correction de l'erreur 500
+
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcrypt";
-import { Role, TypeClient } from "@prisma/client";
+import { Role } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "10");
-  const search = searchParams.get("search") || "";
-  const role = searchParams.get("role") as Role | null;
-  const typeClient = searchParams.get("typeClient") as TypeClient | null;
-  const commercialId = searchParams.get("commercialId") || "";
-
   try {
-    console.log('🔍 API /api/users appelée');
-    const session = await getServerSession(authOptions);
+    console.log('🔍 API /api/users - Début');
     
-    if (!session) {
-      console.log('❌ Pas de session');
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    // Vérification de la session AVANT toute chose
+    let session;
+    try {
+      session = await getServerSession(authOptions);
+      console.log('Session récupérée:', !!session);
+    } catch (sessionError) {
+      console.error('❌ Erreur session dans /api/users:', sessionError);
+      return NextResponse.json({ 
+        error: "Erreur d'authentification. Veuillez vous reconnecter." 
+      }, { status: 401 });
+    }
+    
+    if (!session?.user?.id) {
+      console.log('❌ Aucune session valide');
+      return NextResponse.json({ 
+        error: "Non authentifié" 
+      }, { status: 401 });
     }
 
-    console.log('✅ Session trouvée:', session.user?.email, 'Role:', session.user?.role);
+    console.log('✅ Session valide pour utilisateur:', session.user.id);
 
-    console.log('📊 Paramètres:', { page, limit, search, role, typeClient, commercialId });
-    
-    // Debug spécifique pour role=CLIENT
-    if (role === 'CLIENT') {
-      console.log('🔍 DEBUG role=CLIENT - Session user:', {
-        id: session.user.id,
-        email: session.user.email,
-        role: session.user.role
-      });
+    // Vérification des permissions
+    if (!["ADMIN", "COMMERCIAL"].includes(session.user.role)) {
+      console.log('❌ Permissions insuffisantes:', session.user.role);
+      return NextResponse.json({ 
+        error: "Accès refusé" 
+      }, { status: 403 });
     }
+
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "10"), 1000); // Limite maximale
+    const search = searchParams.get("search") || "";
+    const role = searchParams.get("role") as Role;
 
     const skip = (page - 1) * limit;
 
-    // Construction de la condition WHERE
+    // Construction de la clause WHERE avec gestion d'erreur
     const where: any = {};
 
-    // Filtrage par rôle de l'utilisateur connecté
-    if (session.user.role === "COMMERCIAL") {
-      // Un commercial ne voit que ses clients et lui-même
-      where.OR = [
-        { commercialId: session.user.id },
-        { id: session.user.id }
-      ];
-    } else if (session.user.role === "CLIENT") {
-      // Un client ne voit que lui-même
-      where.id = session.user.id;
+    // Filtrage par rôle avec validation
+    if (role && Object.values(Role).includes(role)) {
+      where.role = role;
     }
-    // Les admins voient tout
 
-    // Filtres additionnels - gérer les conflits avec OR
-    const additionalFilters: any = {};
-
+    // Filtrage par recherche
     if (search) {
-      additionalFilters.OR = [
+      where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { email: { contains: search, mode: "insensitive" } },
-        { company: { contains: search, mode: "insensitive" } },
-        { phone: { contains: search, mode: "insensitive" } }
+        { company: { contains: search, mode: "insensitive" } }
       ];
     }
 
-    if (role) {
-      additionalFilters.role = role;
-    }
+    console.log('🔍 Clause WHERE:', JSON.stringify(where, null, 2));
 
-    if (typeClient) {
-      additionalFilters.typeClient = typeClient;
-    }
-
-    if (commercialId) {
-      additionalFilters.commercialId = commercialId;
-    }
-
-    // Combiner les filtres de manière cohérente
-    if (Object.keys(additionalFilters).length > 0) {
-      if (where.OR) {
-        // Si on a déjà un OR (pour les commerciaux), utiliser AND pour combiner
-        where.AND = [
-          { OR: where.OR },
-          additionalFilters
-        ];
-        delete where.OR; // Supprimer l'ancien OR
-      } else {
-        // Sinon, ajouter directement les filtres
-        Object.assign(where, additionalFilters);
-      }
-    }
-
-    console.log('🔍 Clause WHERE construite:', JSON.stringify(where, null, 2));
-
-    // Récupération des utilisateurs avec pagination
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          phone: true,
-          company: true,
-          address: true,
-          ville: true,
-          codePostal: true,
-          pays: true,
-          typeClient: true,
-          secteurActivite: true,
-          effectif: true,
-          chiffreAffaires: true,
-          image: true,
-          createdAt: true,
-          updatedAt: true,
-          commercial: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            }
-          },
-          _count: {
-            select: {
-              chantiers: true,
-              devis: true,
-              commerciaux: true,
-            }
+    // Requête à la base de données avec gestion d'erreur
+    let users, total;
+    try {
+      [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            phone: true,
+            company: true,
+            address: true,
+            createdAt: true,
+            // Exclure les champs sensibles
           }
-        }
-      }),
-      prisma.user.count({ where })
-    ]);
+        }),
+        prisma.user.count({ where })
+      ]);
+
+      console.log('✅ Utilisateurs trouvés:', users.length, 'Total:', total);
+    } catch (dbError) {
+      console.error('❌ Erreur base de données:', dbError);
+      return NextResponse.json({ 
+        error: "Erreur lors de l'accès à la base de données" 
+      }, { status: 500 });
+    }
 
     const totalPages = Math.ceil(total / limit);
 
-    console.log('✅ Utilisateurs trouvés:', users.length, 'Total:', total);
-
-    return NextResponse.json({
+    const response = {
       users,
       pagination: {
         page,
@@ -153,15 +110,20 @@ export async function GET(request: NextRequest) {
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       }
-    });
+    };
+
+    console.log('✅ Réponse API /api/users envoyée avec succès');
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération des utilisateurs:", error);
+    console.error("❌ Erreur critique dans /api/users:", error);
     console.error("❌ Stack trace:", error.stack);
-    console.error("❌ Database URL utilisée:", process.env.DATABASE_URL?.substring(0, 50) + '...');
-    console.error("❌ Paramètres de la requête:", { page, limit, search, role, typeClient, commercialId });
+    
     return NextResponse.json(
-      { error: "Erreur serveur interne" },
+      { 
+        error: "Erreur serveur interne",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -169,95 +131,54 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('🔍 API POST /api/users appelée');
-    console.log('Database URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
+    console.log('🔍 API POST /api/users - Début');
     
     const session = await getServerSession(authOptions);
     
-    console.log('🔍 Session récupérée:', {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email,
-      userRole: session?.user?.role
-    });
-    
-    if (!session) {
-      console.log('❌ Aucune session trouvée');
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
 
-    // Seuls les admins et commerciaux peuvent créer des utilisateurs
-    if (!["ADMIN", "COMMERCIAL"].includes(session.user.role)) {
+    // Seuls les admins peuvent créer des utilisateurs
+    if (session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
     const body = await request.json();
-    const {
-      name,
-      email,
-      password,
-      role = "CLIENT",
-      phone,
-      company,
-      address,
-      ville,
-      codePostal,
-      pays = "France",
-      typeClient = "PARTICULIER",
-      secteurActivite,
-      effectif,
-      chiffreAffaires,
-      commercialId
-    } = body;
+    const { name, email, password, role, phone, company, address } = body;
 
     // Validation des champs obligatoires
-    if (!name || !email) {
-      return NextResponse.json(
-        { error: "Nom et email obligatoires" },
-        { status: 400 }
-      );
+    if (!name || !email || !password || !role) {
+      return NextResponse.json({ 
+        error: "Champs obligatoires manquants: name, email, password, role" 
+      }, { status: 400 });
     }
 
-    // Vérifier que l'email n'existe pas déjà
+    // Vérification email unique
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "Un utilisateur avec cet email existe déjà" },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        error: "Un utilisateur avec cet email existe déjà" 
+      }, { status: 400 });
     }
 
-    // Si un commercial crée un utilisateur, c'est forcément un client qui lui est assigné
-    const finalRole = session.user.role === "COMMERCIAL" ? "CLIENT" : role;
-    const finalCommercialId = session.user.role === "COMMERCIAL" ? session.user.id : commercialId;
+    // Hashage du mot de passe
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Hacher le mot de passe si fourni
-    let hashedPassword = null;
-    if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
-    }
-
-    // Créer l'utilisateur
-    const user = await prisma.user.create({
+    // Création de l'utilisateur
+    const newUser = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: finalRole as Role,
+        role,
         phone,
         company,
         address,
-        ville,
-        codePostal,
-        pays,
-        typeClient: typeClient as TypeClient,
-        secteurActivite,
-        effectif,
-        chiffreAffaires: chiffreAffaires ? parseFloat(chiffreAffaires) : null,
-        commercialId: finalCommercialId,
       },
       select: {
         id: true,
@@ -267,30 +188,17 @@ export async function POST(request: NextRequest) {
         phone: true,
         company: true,
         address: true,
-        ville: true,
-        codePostal: true,
-        pays: true,
-        typeClient: true,
-        secteurActivite: true,
-        effectif: true,
-        chiffreAffaires: true,
         createdAt: true,
-        commercial: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          }
-        }
       }
     });
 
-    return NextResponse.json(user, { status: 201 });
+    console.log('✅ Utilisateur créé avec succès:', newUser.id);
+    return NextResponse.json(newUser, { status: 201 });
 
   } catch (error) {
-    console.error("Erreur lors de la création de l'utilisateur:", error);
+    console.error("❌ Erreur création utilisateur:", error);
     return NextResponse.json(
-      { error: "Erreur serveur interne" },
+      { error: "Erreur lors de la création de l'utilisateur" },
       { status: 500 }
     );
   }
