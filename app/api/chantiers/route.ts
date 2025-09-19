@@ -6,6 +6,9 @@ import { ChantierStatus } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 API /api/chantiers appelée');
+    console.log('Database URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
+    
     const session = await getServerSession(authOptions);
     
     if (!session) {
@@ -55,6 +58,8 @@ export async function GET(request: NextRequest) {
     // clientId est déjà géré dans le filtrage par rôle ci-dessus
     // Pas besoin de l'ajouter ici car cela créerait une faille de sécurité
 
+    console.log('🔍 Clause WHERE construite:', JSON.stringify(where, null, 2));
+    
     // Récupération des chantiers avec pagination
     const [chantiers, total] = await Promise.all([
       prisma.chantier.findMany({
@@ -87,6 +92,8 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(total / limit);
 
+    console.log('✅ Chantiers trouvés:', chantiers.length, 'Total:', total);
+
     return NextResponse.json({
       chantiers,
       pagination: {
@@ -100,7 +107,9 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Erreur lors de la récupération des chantiers:", error);
+    console.error("❌ Erreur lors de la récupération des chantiers:", error);
+    console.error("❌ Stack trace:", error.stack);
+    console.error("❌ Database URL utilisée:", process.env.DATABASE_URL?.substring(0, 50) + '...');
     return NextResponse.json(
       { error: "Erreur serveur interne" },
       { status: 500 }
