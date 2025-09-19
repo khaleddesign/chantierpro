@@ -104,7 +104,10 @@ export function useChantiers() {
 
   // Récupérer tous les chantiers avec filtres
   const fetchChantiers = useCallback(async (filters: UseChantierFilters = {}) => {
-    if (!session) return;
+    if (!session) {
+      setError('Session expirée, veuillez vous reconnecter');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -123,6 +126,13 @@ export function useChantiers() {
           'Content-Type': 'application/json',
         },
       });
+
+      // Gestion spécifique des erreurs d'auth
+      if (response.status === 401) {
+        setError('Session expirée, veuillez vous reconnecter');
+        // Optionnel : redirection automatique vers login
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -178,7 +188,7 @@ export function useChantiers() {
   // Créer un nouveau chantier
   const createChantier = async (data: ChantierFormData) => {
     if (!session) {
-      setError('Session expirée');
+      setError('Session expirée, veuillez vous reconnecter');
       return { success: false };
     }
 
@@ -193,6 +203,12 @@ export function useChantiers() {
         },
         body: JSON.stringify(data),
       });
+
+      // Gestion spécifique des erreurs d'auth
+      if (response.status === 401) {
+        setError('Session expirée, veuillez vous reconnecter');
+        return { success: false, error: 'Session expirée' };
+      }
 
       if (!response.ok) {
         const errorData = await response.json();

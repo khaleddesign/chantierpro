@@ -74,16 +74,31 @@ export default function ChantiersPage() {
   // Charger les chantiers au montage et quand les filtres changent
   useEffect(() => {
     const delayedFetch = setTimeout(() => {
+      // Éviter les appels multiples
+      if (loading) return;
+      
+      fetchChantiers({
+        page: 1, // Reset à la page 1 lors d'une nouvelle recherche
+        limit: pagination.limit,
+        search: search || undefined,
+        status: statusFilter === 'TOUS' ? undefined : statusFilter,
+      });
+    }, 300); // Réduction du délai de 500ms à 300ms
+
+    return () => clearTimeout(delayedFetch);
+  }, [search, statusFilter]); // Retrait de fetchChantiers et pagination de la dépendance
+
+  // Effet séparé pour la pagination
+  useEffect(() => {
+    if (pagination.page > 1) {
       fetchChantiers({
         page: pagination.page,
         limit: pagination.limit,
         search: search || undefined,
-        status: statusFilter,
+        status: statusFilter === 'TOUS' ? undefined : statusFilter,
       });
-    }, 500); // Debounce pour la recherche
-
-    return () => clearTimeout(delayedFetch);
-  }, [search, statusFilter, fetchChantiers, pagination.page, pagination.limit]);
+    }
+  }, [pagination.page]);
 
   // Afficher les erreurs avec toast
   useEffect(() => {
@@ -114,6 +129,25 @@ export default function ChantiersPage() {
     if (progress < 50) return 'from-orange-500 to-amber-500';
     if (progress < 75) return 'from-blue-500 to-cyan-500';
     return 'from-green-500 to-emerald-500';
+  };
+
+  const handleFormSuccess = async () => {
+    // Éviter les rechargements multiples
+    setLoading(true);
+    
+    try {
+      await fetchChantiers({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: search || undefined,
+        status: statusFilter === 'TOUS' ? undefined : statusFilter,
+      });
+    } catch (error) {
+      console.warn('Erreur lors du rechargement:', error);
+      setError('Erreur lors du rechargement des données');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSort = (column: string) => {

@@ -163,16 +163,12 @@ export async function POST(request: NextRequest) {
       lng
     } = body;
 
-    // Validation des champs obligatoires
-    const missingFields = [];
-    if (!nom) missingFields.push('nom');
-    if (!description) missingFields.push('description');
-    if (!adresse) missingFields.push('adresse');
-    if (!clientId) missingFields.push('clientId');
-    if (!dateDebut) missingFields.push('dateDebut');
-    if (!dateFin) missingFields.push('dateFin');
-    if (!budget || budget < 0) missingFields.push('budget'); // Permettre budget = 0
-    // superficie est optionnel selon le schéma Zod
+    // Validation stricte des champs obligatoires
+    const requiredFields = ['nom', 'description', 'adresse', 'clientId', 'dateDebut', 'dateFin', 'budget'];
+    const missingFields = requiredFields.filter(field => {
+      const value = body[field];
+      return !value || (typeof value === 'string' && !value.trim());
+    });
     
     if (missingFields.length > 0) {
       console.log('Champs manquants:', missingFields, 'Données reçues:', { nom, description, adresse, clientId, dateDebut, dateFin, budget, superficie });
@@ -180,6 +176,15 @@ export async function POST(request: NextRequest) {
         { error: `Champs obligatoires manquants: ${missingFields.join(', ')}` },
         { status: 400 }
       );
+    }
+
+    // Validation des types et valeurs
+    if (typeof budget !== 'number' || budget < 0) {
+      return NextResponse.json({ error: "Le budget doit être un nombre positif" }, { status: 400 });
+    }
+
+    if (new Date(dateDebut) >= new Date(dateFin)) {
+      return NextResponse.json({ error: "La date de fin doit être postérieure à la date de début" }, { status: 400 });
     }
 
     // Pour les clients, ils ne peuvent créer que leurs propres chantiers
