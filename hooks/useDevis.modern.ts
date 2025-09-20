@@ -120,14 +120,7 @@ export function useDevis() {
   );
 
   // ✅ Système CRUD optimiste avec rollback automatique
-  const optimisticCRUD = useOptimisticCRUD(devis, setDevis, '/api/devis', {
-    onSuccess: (result) => {
-      console.log('✅ Opération CRUD réussie:', result.id);
-    },
-    onError: (error) => {
-      errorHandler.handleError(error, 'Devis CRUD');
-    }
-  });
+  const optimisticCRUD = useOptimisticCRUD(devis, setDevis, '/api/devis');
 
   // ✅ Système de synchronisation intelligente avec cache
   const syncCache = useSyncEntityList<Devis>('devis', '/api/devis', setDevis, {
@@ -227,53 +220,65 @@ export function useDevis() {
   const createDevis = useCallback(async (data: DevisFormData) => {
     if (!session) throw new Error('Session non trouvée');
     
-    const result = await optimisticCRUD.create(data);
+    const result = await optimisticCRUD.createEntity(data as any);
     
-    // ✅ Mise à jour de la pagination
-    updatePagination({
-      total: pagination.total + 1,
-      totalPages: Math.ceil((pagination.total + 1) / pagination.limit)
-    });
-    
-    // ✅ Notification aux autres composants
-    customEvents.dispatchEvent(result);
-    
-    return result;
+    if (result.success) {
+      // ✅ Mise à jour de la pagination
+      updatePagination({
+        total: pagination.total + 1,
+        totalPages: Math.ceil((pagination.total + 1) / pagination.limit)
+      });
+      
+      // ✅ Notification aux autres composants
+      customEvents.dispatchEvent(result.data);
+      
+      return result.data;
+    } else {
+      throw new Error(result.error);
+    }
   }, [session, optimisticCRUD, pagination, updatePagination, customEvents]);
 
   const updateDevis = useCallback(async (id: string, data: Partial<DevisFormData> & { statut?: DevisStatus; dateSignature?: Date }) => {
     if (!session) throw new Error('Session non trouvée');
     
-    const result = await optimisticCRUD.update(id, data);
+    const result = await optimisticCRUD.updateEntity(id, data as any);
     
-    // ✅ Mise à jour du devis courant si nécessaire
-    if (currentDevis?.id === id) {
-      setCurrentDevis(result);
+    if (result.success) {
+      // ✅ Mise à jour du devis courant si nécessaire
+      if (currentDevis?.id === id) {
+        setCurrentDevis(result.data);
+      }
+      
+      // ✅ Notification aux autres composants
+      customEvents.dispatchEvent(result.data);
+      
+      return result.data;
+    } else {
+      throw new Error(result.error);
     }
-    
-    // ✅ Notification aux autres composants
-    customEvents.dispatchEvent(result);
-    
-    return result;
   }, [session, optimisticCRUD, currentDevis, customEvents]);
 
   const deleteDevis = useCallback(async (id: string) => {
     if (!session) throw new Error('Session non trouvée');
     
-    await optimisticCRUD.delete(id);
+    const result = await optimisticCRUD.deleteEntity(id);
     
-    // ✅ Mise à jour de la pagination
-    updatePagination({
-      total: Math.max(0, pagination.total - 1),
-      totalPages: Math.ceil(Math.max(0, pagination.total - 1) / pagination.limit)
-    });
-    
-    // ✅ Nettoyage du devis courant si nécessaire
-    if (currentDevis?.id === id) {
-      setCurrentDevis(null);
+    if (result.success) {
+      // ✅ Mise à jour de la pagination
+      updatePagination({
+        total: Math.max(0, pagination.total - 1),
+        totalPages: Math.ceil(Math.max(0, pagination.total - 1) / pagination.limit)
+      });
+      
+      // ✅ Nettoyage du devis courant si nécessaire
+      if (currentDevis?.id === id) {
+        setCurrentDevis(null);
+      }
+      
+      return true;
+    } else {
+      throw new Error(result.error);
     }
-    
-    return true;
   }, [session, optimisticCRUD, pagination, updatePagination, currentDevis]);
 
   // ✅ Fonctions spécialisées
@@ -352,8 +357,8 @@ export function useDevis() {
     // ✅ États
     devis,
     currentDevis,
-    loading: optimisticCRUD.loading || syncCache.isSyncing,
-    error: errorHandler.error || optimisticCRUD.error,
+    loading: syncCache.isSyncing,
+    error: errorHandler.error,
     
     // ✅ Pagination et filtres
     pagination,
@@ -382,5 +387,9 @@ export function useDevis() {
     // ✅ Informations de synchronisation
     lastSync: syncCache.lastSync,
     isSyncing: syncCache.isSyncing,
+    
+    // ✅ Informations des opérations en attente
+    pendingOperations: optimisticCRUD.pendingOperations,
+    hasPendingOperations: optimisticCRUD.hasPendingOperations,
   };
 }
