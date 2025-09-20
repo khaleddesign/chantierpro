@@ -9,6 +9,7 @@ import {
   User, Shield, DollarSign, Users, Eye, EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useFormWithCsrf } from '@/hooks/useCsrfToken';
 import { useToastContext } from '@/components/providers/ToastProvider';
 import { Role, TypeClient } from '@prisma/client';
 import Link from 'next/link';
@@ -48,6 +49,7 @@ export default function NewUserPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { success, error: showError } = useToastContext();
+  const { submitForm, isLoading: csrfLoading, error: csrfError } = useFormWithCsrf();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [commerciaux, setCommerciaux] = useState<any[]>([]);
@@ -132,19 +134,20 @@ export default function NewUserPage() {
       return;
     }
 
+    // Vérifier le token CSRF
+    if (csrfError) {
+      showError('Erreur', 'Token CSRF non disponible. Veuillez recharger la page.');
+      return;
+    }
+
     try {
       setLoading(true);
       
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          effectif: formData.effectif ? parseInt(formData.effectif) : undefined,
-          chiffreAffaires: formData.chiffreAffaires ? parseFloat(formData.chiffreAffaires) : undefined,
-        }),
+      // Utiliser le hook CSRF pour soumettre le formulaire
+      const response = await submitForm('/api/users', {
+        ...formData,
+        effectif: formData.effectif ? parseInt(formData.effectif) : undefined,
+        chiffreAffaires: formData.chiffreAffaires ? parseFloat(formData.chiffreAffaires) : undefined,
       });
 
       if (response.ok) {
@@ -497,13 +500,13 @@ export default function NewUserPage() {
                 Annuler
               </Button>
             </Link>
-            <Button type="submit" disabled={loading} className="flex items-center gap-2">
-              {loading ? (
+            <Button type="submit" disabled={loading || csrfLoading} className="flex items-center gap-2">
+              {loading || csrfLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <Save size={18} />
               )}
-              {loading ? 'Création...' : 'Créer l\'utilisateur'}
+              {loading || csrfLoading ? (csrfLoading ? 'Chargement...' : 'Création...') : 'Créer l\'utilisateur'}
             </Button>
           </div>
         </form>
