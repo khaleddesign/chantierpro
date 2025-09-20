@@ -73,6 +73,17 @@ export function useClients(initialFilters?: ClientFilters): UseClientsReturn {
     fetchClients();
   }, [fetchClients]);
 
+  // ✅ Listener pour les créations de clients
+  useEffect(() => {
+    const handleClientCreated = (event: CustomEvent) => {
+      setClients(prev => [event.detail, ...prev]);
+      setTotal(prev => prev + 1);
+    };
+    
+    window.addEventListener('clientCreated', handleClientCreated as EventListener);
+    return () => window.removeEventListener('clientCreated', handleClientCreated as EventListener);
+  }, []);
+
   return {
     clients,
     loading,
@@ -223,6 +234,11 @@ export function useCreateClient() {
       const result: APIResponse<Client> = await response.json();
 
       if (result.success && result.data) {
+        // ✅ Notification pour la liste principale
+        window.dispatchEvent(new CustomEvent('clientCreated', { 
+          detail: result.data 
+        }));
+        
         return result.data;
       } else {
         throw new Error(result.error || 'Erreur lors de la création du client');

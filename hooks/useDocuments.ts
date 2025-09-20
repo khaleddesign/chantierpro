@@ -99,7 +99,14 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
      const result = await response.json();
      
      if (response.ok) {
-       await fetchDocuments();
+       // ✅ Mise à jour optimiste immédiate
+       setDocuments(prev => [result.document, ...prev]);
+       setStats(prev => ({
+         ...prev,
+         totalDocuments: prev.totalDocuments + 1,
+         totalSize: prev.totalSize + (result.document.taille || 0)
+       }));
+       
        return result;
      } else {
        throw new Error(result.error || 'Erreur lors de l\'upload');
@@ -107,7 +114,7 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
    } catch (err) {
      throw err;
    }
- }, [fetchDocuments]);
+ }, []);
 
  const updateDocument = useCallback(async (id: string, data: any) => {
    try {
@@ -120,7 +127,11 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
      const result = await response.json();
      
      if (response.ok) {
-       await fetchDocuments();
+       // ✅ Mise à jour optimiste immédiate
+       setDocuments(prev => prev.map(doc => 
+         doc.id === id ? result.document : doc
+       ));
+       
        return result;
      } else {
        throw new Error(result.error || 'Erreur lors de la modification');
@@ -128,7 +139,7 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
    } catch (err) {
      throw err;
    }
- }, [fetchDocuments]);
+ }, []);
 
  const deleteDocument = useCallback(async (id: string) => {
    try {
@@ -137,7 +148,15 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
      });
 
      if (response.ok) {
-       await fetchDocuments();
+       // ✅ Mise à jour optimiste immédiate
+       const deletedDoc = documents.find(doc => doc.id === id);
+       setDocuments(prev => prev.filter(doc => doc.id !== id));
+       setStats(prev => ({
+         ...prev,
+         totalDocuments: Math.max(0, prev.totalDocuments - 1),
+         totalSize: Math.max(0, prev.totalSize - (deletedDoc?.taille || 0))
+       }));
+       
        return true;
      } else {
        const result = await response.json();
@@ -146,7 +165,7 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
    } catch (err) {
      throw err;
    }
- }, [fetchDocuments]);
+ }, [documents]);
 
  const shareDocument = useCallback(async (id: string, isPublic: boolean) => {
    try {
@@ -159,7 +178,11 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
      const result = await response.json();
      
      if (response.ok) {
-       await fetchDocuments();
+       // ✅ Mise à jour optimiste immédiate
+       setDocuments(prev => prev.map(doc => 
+         doc.id === id ? { ...doc, public: isPublic } : doc
+       ));
+       
        return result;
      } else {
        throw new Error(result.error || 'Erreur lors du partage');
@@ -167,7 +190,7 @@ export function useDocuments(options: UseDocumentsOptions = {}) {
    } catch (err) {
      throw err;
    }
- }, [fetchDocuments]);
+ }, []);
 
  useEffect(() => {
    fetchDocuments();

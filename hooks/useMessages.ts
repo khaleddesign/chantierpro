@@ -197,11 +197,25 @@ export function useMessages({
         throw new Error('Erreur lors de l\'envoi du message');
       }
       
-      // Recharger les conversations et messages
-      await fetchConversations();
-      if (targetConversationId) {
-        await fetchMessages(targetConversationId);
-      }
+      // ✅ Mise à jour optimiste immédiate
+      const optimisticMessage: Message = {
+        id: `temp-${Date.now()}`,
+        content: content.trim(),
+        senderId: user.id,
+        senderName: user.name || 'Vous',
+        timestamp: new Date().toISOString(),
+        photos,
+        type: 'text',
+        read: true
+      };
+      
+      setMessages(prev => [...prev, optimisticMessage]);
+      
+      // Puis actualiser avec la vraie réponse
+      const realMessage = await response.json();
+      setMessages(prev => prev.map(msg => 
+        msg.id === optimisticMessage.id ? realMessage : msg
+      ));
       
       return true;
       

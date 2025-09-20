@@ -66,7 +66,14 @@ export function usePlanning(options: UsePlanningOptions = {}) {
       const result = await response.json();
       
       if (response.ok) {
-        await fetchPlanning();
+        // ✅ Mise à jour optimiste immédiate
+        setPlanning(prev => [result, ...prev]);
+        setPagination(prev => ({
+          ...prev,
+          total: prev.total + 1,
+          pages: Math.ceil((prev.total + 1) / prev.limit)
+        }));
+        
         return result;
       } else {
         throw new Error(result.error || 'Erreur lors de la création');
@@ -87,7 +94,11 @@ export function usePlanning(options: UsePlanningOptions = {}) {
       const result = await response.json();
       
       if (response.ok) {
-        await fetchPlanning();
+        // ✅ Mise à jour optimiste immédiate
+        setPlanning(prev => prev.map(event => 
+          event.id === id ? result : event
+        ));
+        
         return result;
       } else {
         throw new Error(result.error || 'Erreur lors de la modification');
@@ -104,7 +115,14 @@ export function usePlanning(options: UsePlanningOptions = {}) {
       });
 
       if (response.ok) {
-        await fetchPlanning();
+        // ✅ Mise à jour optimiste immédiate
+        setPlanning(prev => prev.filter(event => event.id !== id));
+        setPagination(prev => ({
+          ...prev,
+          total: Math.max(0, prev.total - 1),
+          pages: Math.ceil(Math.max(0, prev.total - 1) / prev.limit)
+        }));
+        
         return true;
       } else {
         const result = await response.json();

@@ -255,7 +255,15 @@ export function useDevis() {
       }
 
       const newDevis: Devis = await response.json();
+      
+      // ✅ Mise à jour optimiste immédiate
       setDevis(prev => [newDevis, ...prev]);
+      setPagination(prev => ({
+        ...prev,
+        total: prev.total + 1,
+        totalPages: Math.ceil((prev.total + 1) / prev.limit)
+      }));
+      
       return newDevis;
 
     } catch (err: any) {
@@ -320,6 +328,13 @@ export function useDevis() {
       }
 
       setDevis(prev => prev.filter(d => d.id !== id));
+      
+      // ✅ Mise à jour optimiste de la pagination
+      setPagination(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1),
+        totalPages: Math.ceil(Math.max(0, prev.total - 1) / prev.limit)
+      }));
       
       if (currentDevis?.id === id) {
         setCurrentDevis(null);
