@@ -16,7 +16,7 @@ interface ClientDetailProps {
 export default function ClientDetail({ clientId }: ClientDetailProps) {
   // Utilisation des hooks personnalisés
   const { client, loading, error, update: updateClient } = useClient(clientId);
-  const { handleError, withErrorHandling } = useErrorHandler();
+  const { handleError } = useErrorHandler();
   
   const [activeTab, setActiveTab] = useState<'profile' | 'interactions' | 'opportunites' | 'stats'>('profile');
   const [editing, setEditing] = useState(false);
@@ -55,14 +55,18 @@ export default function ClientDetail({ clientId }: ClientDetailProps) {
     }
   }, [client, editing]);
 
-  const handleSave = withErrorHandling(async () => {
+  const handleSave = async () => {
     if (!client) return;
     
-    // Utiliser le hook updateClient avec gestion d'erreur automatique
-    await updateClient(formData);
-    setEditing(false);
-    alert('Client mis à jour avec succès');
-  });
+    try {
+      // Utiliser le hook updateClient avec gestion d'erreur automatique
+      await updateClient(formData);
+      setEditing(false);
+      alert('Client mis à jour avec succès');
+    } catch (error) {
+      handleError(error, 'Save Client');
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
