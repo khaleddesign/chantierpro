@@ -83,7 +83,11 @@ export const authOptions: NextAuthOptions = {
     }
   },
   
-  session: { strategy: 'jwt' },
+  session: {
+    strategy: "jwt",
+    maxAge: 4 * 60 * 60, // 4 heures au lieu de 30 jours
+    updateAge: 60 * 60,  // Mise à jour toutes les heures
+  },
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
@@ -136,6 +140,6 @@ export const authOptions: NextAuthOptions = {
   
   // 🔐 CONFIGURATION DE SÉCURITÉ AVANCÉE
   jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 jours
+    maxAge: 4 * 60 * 60, // 4 heures
   },
 };

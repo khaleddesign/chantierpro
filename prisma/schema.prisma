@@ -21,6 +21,9 @@ model User {
   company       String?
   address       String?
   
+  // Relations audit
+  auditLogs     AuditLog[]
+  
   // PHASE 1 - CHAMPS CRM ÉTENDUS
   telephoneFixe     String?
   telephoneMobile   String?
@@ -1911,4 +1914,24 @@ enum BreachStatus {
   RESOLVED
   REPORTED
   CLOSED
+}
+
+// 🔒 MODÈLE AUDIT LOG POUR LA SÉCURITÉ
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // Type d'action (LOGIN_SUCCESS, ACCESS_DENIED, etc.)
+  resource  String   // Ressource concernée (chantier:123, user:456, etc.)
+  ip        String?  // Adresse IP de l'utilisateur
+  userAgent String?  // User-Agent du navigateur
+  timestamp DateTime @default(now())
+  details   Json?    // Détails supplémentaires de l'action
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([resource])
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ChantierStatus } from "@prisma/client";
+import { logChantierAction, logAccessDenied, SecurityActions } from "@/lib/audit-logger";
 
 export async function GET(
   request: NextRequest,
@@ -139,6 +140,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  
   try {
     console.log('=== PUT /api/chantiers/[id] - Début ===');
     console.log('ID du chantier:', id);
@@ -182,6 +186,15 @@ export async function PUT(
       session.user.role === "COMMERCIAL";
 
     if (!canEdit) {
+      // Log tentative d'accès refusé
+      await logAccessDenied(
+        session.user.id,
+        `chantier:${id}`,
+        ip,
+        userAgent,
+        'insufficient_permissions'
+      );
+      
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
     }
 
@@ -268,6 +281,20 @@ export async function PUT(
         }
       });
     }
+
+    // Log modification réussie du chantier
+    await logChantierAction(
+      session.user.id,
+      SecurityActions.CHANTIER_UPDATE,
+      id,
+      ip,
+      userAgent,
+      {
+        changes: Object.keys(body),
+        previousStatus: existingChantier.statut,
+        newStatus: statut || existingChantier.statut,
+      }
+    );
 
     return NextResponse.json(updatedChantier);
 
