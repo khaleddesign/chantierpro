@@ -1,3 +1,7 @@
+// Force Node.js runtime for database operations
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 // app/api/users/route.ts - Correction de l'erreur 500
 
 import { NextRequest, NextResponse } from "next/server";
