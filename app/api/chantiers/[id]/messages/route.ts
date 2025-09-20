@@ -96,15 +96,27 @@ export async function POST(
       return NextResponse.json({ error: 'Chantier introuvable ou accès refusé' }, { status: 404 });
     }
 
-    // Validation des données
-    if (!data.message || data.message.trim().length === 0) {
-      return NextResponse.json({ error: 'Le message ne peut pas être vide' }, { status: 400 });
+    // Validation renforcée
+    if (!data.message || typeof data.message !== 'string') {
+      return NextResponse.json({ error: 'Message requis' }, { status: 400 });
     }
+    
+    const trimmedMessage = data.message.trim();
+    if (trimmedMessage.length === 0) {
+      return NextResponse.json({ error: 'Message vide non autorisé' }, { status: 400 });
+    }
+    
+    if (trimmedMessage.length > 2000) {
+      return NextResponse.json({ error: 'Message trop long (max 2000 caractères)' }, { status: 400 });
+    }
+    
+    // Échapper le HTML pour éviter XSS
+    const sanitizedMessage = trimmedMessage.replace(/<[^>]*>?/gm, '');
 
     // Créer le message
     const newMessage = await prisma.message.create({
       data: {
-        message: data.message.trim(),
+        message: sanitizedMessage,
         chantierId: chantierId,
         expediteurId: session.user.id,
         typeMessage: 'CHANTIER',
