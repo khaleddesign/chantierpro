@@ -215,7 +215,7 @@ export default function OptimisticUpdatesDemo() {
       {/* ✅ Liste des devis */}
       <Card>
         <CardHeader>
-          <CardTitle>Devis ({devis.length})</CardTitle>
+          <CardTitle>Devis ({Array.isArray(devis) ? devis.length : 0})</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -223,11 +223,11 @@ export default function OptimisticUpdatesDemo() {
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Chargement...</span>
             </div>
-          ) : devis.length === 0 ? (
+          ) : Array.isArray(devis) && devis.length === 0 ? (
             <p className="text-gray-500 text-center py-8">Aucun devis trouvé</p>
           ) : (
             <div className="space-y-3">
-              {devis.map((devis) => (
+              {Array.isArray(devis) && devis.map((devis) => (
                 <div key={devis.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <p className="font-medium">{devis.objet}</p>

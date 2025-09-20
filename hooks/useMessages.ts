@@ -48,6 +48,24 @@ interface UseMessagesProps {
   enableNotifications?: boolean;
 }
 
+// ✅ CORRECTION : Fonction helper pour obtenir le nom utilisateur de manière sûre
+const getSafeUserName = (user: any): string => {
+  // Vérifier d'abord si user.name existe et n'est pas vide
+  if (user?.name && user.name.trim() && user.name !== 'Utilisateur') {
+    return user.name;
+  }
+  
+  // Si pas de nom, utiliser l'email comme fallback
+  if (user?.email) {
+    const emailName = user.email.split('@')[0];
+    // Capitaliser la première lettre pour un meilleur affichage
+    return emailName.charAt(0).toUpperCase() + emailName.slice(1);
+  }
+  
+  // Dernier recours
+  return 'Utilisateur';
+};
+
 export function useMessages({
   pollingInterval = 30000,
   enableNotifications = true
@@ -129,7 +147,7 @@ export function useMessages({
           {
             id: `msg-1-${Date.now()}`,
             senderId: 'client-1',
-            senderName: 'Sophie Durand',
+            senderName: 'Sophie Durand', // ✅ Nom explicite
             timestamp: new Date(Date.now() - 3600000).toISOString(),
             content: 'Bonjour, j\'aimerais avoir des informations sur l\'avancement du chantier.',
             photos: [],
@@ -139,7 +157,7 @@ export function useMessages({
           {
             id: `msg-2-${Date.now()}`,
             senderId: user.id,
-            senderName: user.name || 'Vous',
+            senderName: getSafeUserName(user), // ✅ Utiliser helper sécurisé
             timestamp: new Date(Date.now() - 1800000).toISOString(),
             content: 'Bonjour ! Je vous enverrai un rapport détaillé aujourd\'hui.',
             photos: [],
@@ -152,7 +170,17 @@ export function useMessages({
       }
       
       const data = await response.json();
-      setMessages(data.messages || []);
+      
+      // ✅ CORRECTION : Nettoyer les messages reçus pour s'assurer que les noms sont définis
+      const cleanMessages = (data.messages || []).map((msg: any) => ({
+        ...msg,
+        senderName: msg.senderName || getSafeUserName({ 
+          name: msg.senderName, 
+          email: msg.senderEmail 
+        })
+      }));
+      
+      setMessages(cleanMessages);
       
     } catch (err) {
       console.error('Erreur fetchMessages:', err);
@@ -176,6 +204,22 @@ export function useMessages({
       setSending(true);
       setError(null);
       
+      // ✅ CORRECTION : Message optimiste avec nom sécurisé
+      const optimisticMessage: Message = {
+        id: `temp-${Date.now()}`,
+        content: content.trim(),
+        senderId: user.id,
+        senderName: getSafeUserName(user), // ✅ Utiliser helper sécurisé
+        senderRole: user.role || 'USER',
+        timestamp: new Date().toISOString(),
+        photos,
+        type: 'text',
+        read: true
+      };
+
+      // ✅ Mise à jour optimiste immédiate
+      setMessages(prev => [...prev, optimisticMessage]);
+
       const response = await fetch('/api/messages', {
         method: 'POST',
         headers: {
@@ -187,35 +231,30 @@ export function useMessages({
           chantierId: targetConversationId,
           destinataireId,
           photos,
-          senderName: user.name,
+          senderName: getSafeUserName(user), // ✅ Envoyer le bon nom à l'API
           userId: user.id,
           content: content.trim()
         })
       });
       
       if (!response.ok) {
+        // ✅ Rollback en cas d'erreur
+        setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
         throw new Error('Erreur lors de l\'envoi du message');
       }
-      
-      // ✅ Mise à jour optimiste immédiate
-      const optimisticMessage: Message = {
-        id: `temp-${Date.now()}`,
-        content: content.trim(),
-        senderId: user.id,
-        senderName: user.name || 'Vous',
-        timestamp: new Date().toISOString(),
-        photos,
-        type: 'text',
-        read: true
-      };
-      
-      setMessages(prev => [...prev, optimisticMessage]);
-      
-      // Puis actualiser avec la vraie réponse
+
       const realMessage = await response.json();
+      
+      // ✅ Remplacer le message temporaire par le vrai
       setMessages(prev => prev.map(msg => 
-        msg.id === optimisticMessage.id ? realMessage : msg
+        msg.id === optimisticMessage.id ? {
+          ...realMessage,
+          senderName: getSafeUserName(user) // ✅ S'assurer que le nom est correct
+        } : msg
       ));
+      
+      // Recharger les conversations pour mettre à jour les compteurs
+      await fetchConversations();
       
       return true;
       
@@ -226,7 +265,7 @@ export function useMessages({
     } finally {
       setSending(false);
     }
-  }, [user?.id, activeConversationId, fetchConversations, fetchMessages]);
+  }, [user, activeConversationId, fetchConversations]);
 
   const setActiveConversation = useCallback((conversationId: string | null) => {
     setActiveConversationId(conversationId);

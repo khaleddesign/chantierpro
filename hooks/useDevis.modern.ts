@@ -123,14 +123,24 @@ export function useDevis() {
   const optimisticCRUD = useOptimisticCRUD(devis, setDevis, '/api/devis');
 
   // ✅ Système de synchronisation intelligente avec cache
-  const syncCache = useSyncEntityList<Devis>('devis', '/api/devis', setDevis, {
-    autoSync: true,
-    syncInterval: 60000, // 1 minute
+  const syncCache = useSyncEntityList<Devis>('devis', async () => {
+    const response = await fetch('/api/devis');
+    const data = await response.json();
+    return data.devis || [];
+  }, {
+    staleTime: 60000, // 1 minute
     onSync: (entities) => {
       console.log(`🔄 ${entities.length} devis synchronisés`);
     },
-    onError: (error) => {
-      errorHandler.handleError(error, 'Devis Sync');
+    onConflict: (local, remote) => {
+      // Stratégie de résolution de conflit : prendre le plus récent
+      // Pour les listes, on compare les timestamps de la dernière modification
+      const localLastUpdate = local.length > 0 ? 
+        Math.max(...local.map(d => new Date(d.updatedAt || d.dateCreation).getTime())) : 0;
+      const remoteLastUpdate = remote.length > 0 ? 
+        Math.max(...remote.map(d => new Date(d.updatedAt || d.dateCreation).getTime())) : 0;
+      
+      return remoteLastUpdate > localLastUpdate ? remote : local;
     }
   });
 
@@ -349,13 +359,13 @@ export function useDevis() {
   // ✅ Chargement initial
   useEffect(() => {
     if (session) {
-      fetchDevis();
+      syncCache.sync();
     }
-  }, [session, fetchDevis]);
+  }, [session, syncCache]);
 
   return {
     // ✅ États
-    devis,
+    devis: syncCache.entities,
     currentDevis,
     loading: syncCache.isSyncing,
     error: errorHandler.error,
@@ -385,7 +395,7 @@ export function useDevis() {
     setCurrentDevis,
     
     // ✅ Informations de synchronisation
-    lastSync: syncCache.lastSync,
+    lastSync: syncCache.lastSyncTime ? new Date(syncCache.lastSyncTime) : null,
     isSyncing: syncCache.isSyncing,
     
     // ✅ Informations des opérations en attente
