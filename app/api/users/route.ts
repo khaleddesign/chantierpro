@@ -121,12 +121,14 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("❌ Erreur critique dans /api/users:", error);
-    console.error("❌ Stack trace:", error.stack);
+    if (error instanceof Error) {
+      console.error("❌ Stack trace:", error.stack);
+    }
     
     return NextResponse.json(
       { 
         error: "Erreur serveur interne",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : undefined
       },
       { status: 500 }
     );

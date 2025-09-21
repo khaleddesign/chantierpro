@@ -240,7 +240,9 @@ export function useDevis() {
       });
       
       // ✅ Notification aux autres composants
-      customEvents.dispatchEvent(result.data);
+      if (result.data) {
+        customEvents.dispatchEvent(result.data);
+      }
       
       return result.data;
     } else {
@@ -255,12 +257,14 @@ export function useDevis() {
     
     if (result.success) {
       // ✅ Mise à jour du devis courant si nécessaire
-      if (currentDevis?.id === id) {
+      if (currentDevis?.id === id && result.data) {
         setCurrentDevis(result.data);
       }
       
       // ✅ Notification aux autres composants
-      customEvents.dispatchEvent(result.data);
+      if (result.data) {
+        customEvents.dispatchEvent(result.data);
+      }
       
       return result.data;
     } else {

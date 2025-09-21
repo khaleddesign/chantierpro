@@ -13,7 +13,7 @@ interface CacheHealth {
 }
 
 export default function CacheMonitor() {
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState<{ hits: number; misses: number; size: number; totalKeys: number; memory: string } | null>(null);
   const [health, setHealth] = useState<CacheHealth>({ status: 'healthy', details: '' });
   const [isClearing, setIsClearing] = useState(false);
   const [lastCleared, setLastCleared] = useState<Date | null>(null);
@@ -72,9 +72,20 @@ export default function CacheMonitor() {
     }
   };
 
-  const hitRate = stats.hits + stats.misses > 0 
+  const hitRate = stats && stats.hits + stats.misses > 0 
     ? (stats.hits / (stats.hits + stats.misses)) * 100 
     : 0;
+
+  if (!stats) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 text-gray-400 animate-spin mr-2" />
+          <p className="text-gray-500">Chargement des statistiques du cache...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">

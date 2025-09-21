@@ -41,7 +41,7 @@ export default function TestAPIPage() {
       };
 
     } catch (error) {
-      results.error = error.message;
+      results.error = error instanceof Error ? error.message : 'Erreur inconnue';
     }
 
     setApiResults(results);

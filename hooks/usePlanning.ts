@@ -12,7 +12,7 @@ interface UsePlanningOptions {
 }
 
 export function usePlanning(options: UsePlanningOptions = {}) {
-  const [planning, setPlanning] = useState([]);
+  const [planning, setPlanning] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({

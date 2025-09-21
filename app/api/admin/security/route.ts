@@ -199,15 +199,15 @@ export async function GET(request: NextRequest) {
           timeWindow: timeWindow.toISOString()
         },
         statistics: {
-          byRiskLevel: riskStats.reduce((acc, stat) => {
+          byRiskLevel: riskStats.reduce((acc: Record<string, number>, stat: { riskLevel: string; _count: { _all: number } }) => {
             acc[stat.riskLevel] = stat._count._all;
             return acc;
           }, {} as Record<string, number>),
-          suspiciousActions: actionStats.map(stat => ({
+          suspiciousActions: actionStats.map((stat: { action: string; _count: { _all: number } }) => ({
             action: stat.action,
             count: stat._count._all
           })),
-          suspiciousIPs: ipStats.map(stat => ({
+          suspiciousIPs: ipStats.map((stat: { ipAddress: string; _count: { _all: number } }) => ({
             ipAddress: stat.ipAddress,
             count: stat._count._all
           })),
@@ -215,7 +215,7 @@ export async function GET(request: NextRequest) {
         },
         alerts: {
           recent: recentSuspiciousActivity,
-          byLevel: alertsStats.reduce((acc, stat) => {
+          byLevel: alertsStats.reduce((acc: Record<string, number>, stat: { riskLevel: string; _count: { _all: number } }) => {
             acc[stat.riskLevel] = stat._count._all;
             return acc;
           }, {} as Record<string, number>)

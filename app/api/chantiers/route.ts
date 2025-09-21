@@ -108,7 +108,9 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error("❌ Erreur lors de la récupération des chantiers:", error);
-    console.error("❌ Stack trace:", error.stack);
+    if (error instanceof Error) {
+      console.error("❌ Stack trace:", error.stack);
+    }
     console.error("❌ Database URL utilisée:", process.env.DATABASE_URL?.substring(0, 50) + '...');
     return NextResponse.json(
       { error: "Erreur serveur interne" },

@@ -61,7 +61,7 @@ export default function TestUsersAPIPage() {
       };
 
     } catch (error) {
-      results.error = error.message;
+      results.error = error instanceof Error ? error.message : 'Erreur inconnue';
       console.error('Test error:', error);
     }
 

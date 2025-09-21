@@ -167,7 +167,7 @@ export class RedisCache {
       const cacheKeys = keys.map(key => this.buildKey(key, namespace));
       const results = await this.client.mget(...cacheKeys);
       
-      return results.map(result => 
+      return results.map((result: string | null) => 
         result ? JSON.parse(result) : null
       );
     } catch (error) {

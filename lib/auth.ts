@@ -46,8 +46,8 @@ export const authOptions: NextAuthOptions = {
           name: user.name || user.email.split('@')[0], // Fallback intelligent
           email: user.email,
           role: user.role,
-          company: user.company,
-          image: user.image,
+          company: user.company || undefined,
+          image: user.image || undefined,
         };
       }
     })

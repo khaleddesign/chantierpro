@@ -50,7 +50,10 @@ export async function GET(request: NextRequest) {
       case 'all-requests':
         const status = searchParams.get('status');
         const type = searchParams.get('type');
-        result = await gdprController.getAllDataRightsRequests({ status, type });
+        result = await gdprController.getAllDataRightsRequests({ 
+          status: status || undefined, 
+          type: type || undefined 
+        });
         break;
       
       case 'consents-overview':
@@ -61,7 +64,10 @@ export async function GET(request: NextRequest) {
         const userId = searchParams.get('userId');
         const startDate = searchParams.get('startDate');
         const endDate = searchParams.get('endDate');
-        result = await gdprController.getProcessingLogs(userId, { startDate, endDate });
+        result = await gdprController.getProcessingLogs(userId || undefined, { 
+          startDate: startDate || undefined, 
+          endDate: endDate || undefined 
+        });
         break;
       
       case 'retention-report':

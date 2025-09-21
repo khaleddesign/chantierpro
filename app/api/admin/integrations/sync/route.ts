@@ -194,76 +194,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/admin/integrations/sync/[id] - Annuler une synchronisation
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
-    }
-
-    const hasPermission = await checkPermission(session.user.id, 'MANAGE_INTEGRATIONS', 'admin');
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Permissions insuffisantes' }, { status: 403 });
-    }
-
-    // Vérifier que la sync existe et peut être annulée
-    const syncRecord = await prisma.syncRecord.findUnique({
-      where: { id: id }
-    });
-
-    if (!syncRecord) {
-      return NextResponse.json({
-        error: 'Synchronisation non trouvée'
-      }, { status: 404 });
-    }
-
-    if (!['PENDING', 'RUNNING'].includes(syncRecord.status)) {
-      return NextResponse.json({
-        error: 'Cette synchronisation ne peut pas être annulée'
-      }, { status: 400 });
-    }
-
-    // Marquer comme annulée
-    await prisma.syncRecord.update({
-      where: { id: id },
-      data: {
-        status: 'CANCELLED',
-        completedAt: new Date(),
-        errorMessage: 'Annulé par l\'utilisateur'
-      }
-    });
-
-    // Log de sécurité
-    await logSecurityEvent({
-      userId: session.user.id,
-      action: 'CANCEL_INTEGRATION_SYNC',
-      resource: 'integrations',
-      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
-      userAgent: request.headers.get('user-agent') || 'unknown',
-      success: true,
-      riskLevel: 'LOW',
-      details: { syncRecordId: id }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Synchronisation annulée'
-    });
-
-  } catch (error) {
-    console.error('Erreur annulation synchronisation:', error);
-    return NextResponse.json({
-      error: 'Erreur interne du serveur'
-    }, { status: 500 });
-  }
-}
-
 /**
  * Fonction pour traiter la synchronisation en arrière-plan
  */
@@ -302,7 +232,8 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
       case 'CLIENTS':
         if (syncRecord.integration.type === 'ACCOUNTING') {
           result = await (integrationInstance as unknown as { syncClients: () => Promise<unknown> }).syncClients();
-          totalItems = result.data?.created + result.data?.updated || 0;
+          const syncResult = result as { data?: { created?: number; updated?: number } };
+          totalItems = (syncResult.data?.created || 0) + (syncResult.data?.updated || 0);
           successfulItems = totalItems;
           processedItems = totalItems;
         }
@@ -311,7 +242,8 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
       case 'FACTURES':
         if (syncRecord.integration.type === 'ACCOUNTING') {
           result = await (integrationInstance as unknown as { syncFactures: () => Promise<unknown> }).syncFactures();
-          totalItems = result.data?.created + result.data?.updated || 0;
+          const syncResult = result as { data?: { created?: number; updated?: number } };
+          totalItems = (syncResult.data?.created || 0) + (syncResult.data?.updated || 0);
           successfulItems = totalItems;
           processedItems = totalItems;
         }
@@ -342,7 +274,7 @@ async function processSyncInBackground(syncRecordId: string, userId: string): Pr
         failedItems,
         details: {
           ...syncRecord.details as any,
-          result: result.data
+          result: (result as { data?: unknown }).data
         } as any
       }
     });

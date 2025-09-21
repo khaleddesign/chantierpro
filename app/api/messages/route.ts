@@ -87,7 +87,8 @@ export async function GET(request: NextRequest) {
 
     // Compter les messages non lus pour chaque conversation
     for (let [conversationId, conversation] of conversations) {
-      const otherUserId = conversationId.split('-').find(id => id !== session.user.id);
+      const otherUserId = conversationId.split('-').find((id: string) => id !== session.user.id);
+      if (!otherUserId) continue;
       const unreadCount = await prisma.message.count({
         where: {
           expediteurId: otherUserId,

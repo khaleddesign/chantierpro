@@ -108,7 +108,7 @@ export class GDPRDataController {
         data: {
           userId,
           type,
-          requestData: requestData ? JSON.stringify(requestData) : null
+          requestData: requestData ? JSON.stringify(requestData) : undefined
         }
       });
 
