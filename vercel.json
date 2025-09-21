@@ -3,28 +3,5 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
-  "env": {
-    "NEXTAUTH_SECRET": "o/mWkU7PT4SiiHfzJzU7v1xhUCF2zD6Xmc4QFwZqoTU=",
-    "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
-    "DATABASE_URL": "postgresql://postgres.ctkbzqlebdfynczrwapl:Mourouj1239!@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&pool_timeout=20&schema=public",
-    "POSTGRES_PRISMA_URL": "postgresql://postgres.ctkbzqlebdfynczrwapl:Mourouj1239!@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1",
-    "POSTGRES_URL_NON_POOLING": "postgresql://postgres.ctkbzqlebdfynczrwapl:Mourouj1239!@aws-1-eu-north-1.pooler.supabase.com:5432/postgres",
-    "SUPABASE_URL": "https://ctkbzqlebdfynczrwapl.supabase.co",
-    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0a2J6cWxlYmRmeW5jenJ3YXBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDc2NjcsImV4cCI6MjA3Mzc4MzY2N30.N1n23esud5UDlQqipahDLe_EmLAn1oDZjyoJAJ2KJyk",
-    "REDIS_DISABLED": "true",
-    "NODE_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "NEXTAUTH_SECRET": "o/mWkU7PT4SiiHfzJzU7v1xhUCF2zD6Xmc4QFwZqoTU=",
-      "NEXTAUTH_URL": "https://chantierpro-g39ldrxhs-khaleddesigns-projects.vercel.app",
-      "DATABASE_URL": "postgresql://postgres.ctkbzqlebdfynczrwapl:Mourouj1239!@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&pool_timeout=20&schema=public",
-      "POSTGRES_PRISMA_URL": "postgresql://postgres.ctkbzqlebdfynczrwapl:Mourouj1239!@aws-1-eu-north-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1",
-      "POSTGRES_URL_NON_POOLING": "postgresql://postgres.ctkbzqlebdfynczrwapl:Mourouj1239!@aws-1-eu-north-1.pooler.supabase.com:5432/postgres",
-      "SUPABASE_URL": "https://ctkbzqlebdfynczrwapl.supabase.co",
-      "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0a2J6cWxlYmRmeW5jenJ3YXBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgyMDc2NjcsImV4cCI6MjA3Mzc4MzY2N30.N1n23esud5UDlQqipahDLe_EmLAn1oDZjyoJAJ2KJyk",
-      "REDIS_DISABLED": "true"
-    }
-  }
+  "devCommand": "npm run dev"
 }
