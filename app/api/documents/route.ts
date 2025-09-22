@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 
-// GET - Récupérer tous les documents avec filtres
+// GET - Récupérer les documents avec filtrage par rôle et permissions
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -22,26 +22,88 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Construire les filtres
+    // 🔒 SÉCURITÉ : Construire les filtres selon le rôle de l'utilisateur
     const whereClause: any = {};
-    
+
+    // Filtrage par rôle et permissions
+    switch (session.user.role) {
+      case 'ADMIN':
+        // Les admins voient tous les documents
+        break;
+        
+      case 'COMMERCIAL':
+        // Les commerciaux voient les documents de leurs clients
+        whereClause.OR = [
+          { uploaderId: session.user.id }, // Documents uploadés par eux
+          { 
+            chantier: {
+              client: {
+                commercialId: session.user.id // Documents des chantiers de leurs clients
+              }
+            }
+          },
+          { public: true } // Documents publics
+        ];
+        break;
+        
+      case 'CLIENT':
+        // Les clients voient seulement leurs propres documents
+        whereClause.OR = [
+          { uploaderId: session.user.id }, // Documents uploadés par eux
+          { 
+            chantier: {
+              clientId: session.user.id // Documents de leurs chantiers
+            }
+          },
+          { public: true } // Documents publics
+        ];
+        break;
+        
+      case 'OUVRIER':
+        // Les ouvriers voient les documents des chantiers qui leur sont assignés
+        whereClause.OR = [
+          { uploaderId: session.user.id }, // Documents uploadés par eux
+          { 
+            chantier: {
+              assignees: {
+                some: {
+                  id: session.user.id // Documents des chantiers assignés
+                }
+              }
+            }
+          },
+          { public: true } // Documents publics
+        ];
+        break;
+        
+      default:
+        // Rôle non reconnu - accès refusé
+        return NextResponse.json({ error: 'Rôle non autorisé' }, { status: 403 });
+    }
+
+    // Ajouter les filtres de recherche
     if (search) {
-      whereClause.OR = [
-        { nom: { contains: search, mode: 'insensitive' } },
-        { nomOriginal: { contains: search, mode: 'insensitive' } },
-        { tags: { contains: search, mode: 'insensitive' } }
-      ];
+      whereClause.AND = whereClause.AND || [];
+      whereClause.AND.push({
+        OR: [
+          { nom: { contains: search, mode: 'insensitive' } },
+          { nomOriginal: { contains: search, mode: 'insensitive' } },
+          { tags: { contains: search, mode: 'insensitive' } }
+        ]
+      });
     }
 
     if (type) {
-      whereClause.type = type;
+      whereClause.AND = whereClause.AND || [];
+      whereClause.AND.push({ type });
     }
 
     if (chantierId) {
-      whereClause.chantierId = chantierId;
+      whereClause.AND = whereClause.AND || [];
+      whereClause.AND.push({ chantierId });
     }
 
-    // Récupérer les documents
+    // Récupérer les documents avec les permissions
     const documents = await prisma.document.findMany({
       where: whereClause,
       include: {
@@ -55,7 +117,14 @@ export async function GET(request: NextRequest) {
         chantier: {
           select: {
             id: true,
-            nom: true
+            nom: true,
+            client: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         }
       },
@@ -66,19 +135,21 @@ export async function GET(request: NextRequest) {
       take: limit
     });
 
-    // Compter le total
+    // Compter le total avec les mêmes filtres
     const totalCount = await prisma.document.count({
       where: whereClause
     });
 
-    // Statistiques
+    // 🔒 SÉCURITÉ : Statistiques filtrées selon les permissions
     const stats = {
-      total: await prisma.document.count(),
+      total: await prisma.document.count({ where: whereClause }),
       byType: await prisma.document.groupBy({
         by: ['type'],
+        where: whereClause,
         _count: true
       }),
       totalSize: await prisma.document.aggregate({
+        where: whereClause,
         _sum: {
           taille: true
         }
@@ -100,7 +171,15 @@ export async function GET(request: NextRequest) {
         limit,
         total: totalCount,
         pages: Math.ceil(totalCount / limit)
-      }
+      },
+      // 🔒 SÉCURITÉ : Informations de debug pour les admins uniquement
+      ...(session.user.role === 'ADMIN' && {
+        debug: {
+          userRole: session.user.role,
+          userId: session.user.id,
+          appliedFilters: whereClause
+        }
+      })
     });
 
   } catch (error) {
@@ -198,17 +277,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que le chantier existe (si spécifié)
+    // 🔒 SÉCURITÉ : Vérifier les permissions sur le chantier (si spécifié)
     if (chantierId) {
       const chantier = await prisma.chantier.findUnique({
         where: { id: chantierId },
-        select: { id: true }
+        select: { 
+          id: true,
+          clientId: true,
+          client: {
+            select: {
+              commercialId: true
+            }
+          },
+          assignees: {
+            select: {
+              id: true
+            }
+          }
+        }
       });
 
       if (!chantier) {
         return NextResponse.json(
           { error: 'Chantier non trouvé' },
           { status: 400 }
+        );
+      }
+
+      // Vérifier les permissions selon le rôle
+      let hasPermission = false;
+      
+      switch (session.user.role) {
+        case 'ADMIN':
+          hasPermission = true;
+          break;
+          
+        case 'COMMERCIAL':
+          hasPermission = chantier.client.commercialId === session.user.id;
+          break;
+          
+        case 'CLIENT':
+          hasPermission = chantier.clientId === session.user.id;
+          break;
+          
+        case 'OUVRIER':
+          hasPermission = chantier.assignees.some(assignee => assignee.id === session.user.id);
+          break;
+          
+        default:
+          hasPermission = false;
+      }
+
+      if (!hasPermission) {
+        return NextResponse.json(
+          { error: 'Permissions insuffisantes pour ce chantier' },
+          { status: 403 }
         );
       }
     }
