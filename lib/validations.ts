@@ -40,3 +40,31 @@ export const MarkReadSchema = z.object({
   chantierId: z.string().min(1, "Chantier ID requis"),
   userId: z.string().min(1, "User ID requis")
 });
+
+export const UserCreateSchema = z.object({
+  name: z.string()
+    .min(2, 'Le nom doit contenir au moins 2 caractères')
+    .max(100, 'Le nom ne peut pas dépasser 100 caractères')
+    .trim(),
+  email: z.string()
+    .email('Format email invalide')
+    .toLowerCase(),
+  password: z.string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+    .max(100, 'Le mot de passe ne peut pas dépasser 100 caractères'),
+  role: z.enum(['ADMIN', 'COMMERCIAL', 'CLIENT', 'OUVRIER']),
+  phone: z.string()
+    .regex(/^(\+33|0)[1-9](\d{8})$/, 'Numéro de téléphone français invalide')
+    .optional()
+    .or(z.literal('')),
+  company: z.string()
+    .max(200, 'Le nom de l\'entreprise ne peut pas dépasser 200 caractères')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+  address: z.string()
+    .max(500, 'L\'adresse ne peut pas dépasser 500 caractères')
+    .trim()
+    .optional()
+    .or(z.literal(''))
+});
