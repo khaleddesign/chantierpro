@@ -3,7 +3,7 @@ import redis from './redis';
 
 // Configuration du rate limiting par type d'endpoint
 const RATE_LIMITS = {
-  AUTH: { maxRequests: 5, windowMs: 15 * 60 * 1000 }, // 5 tentatives par 15 minutes pour auth
+  AUTH: { maxRequests: 3, windowMs: 15 * 60 * 1000 }, // 🔒 RENFORCÉ: 3 tentatives par 15 minutes pour auth
   UPLOAD: { maxRequests: 10, windowMs: 60 * 1000 }, // 10 uploads par minute
   API_READ: { maxRequests: 100, windowMs: 60 * 1000 }, // 100 lectures par minute
   API_WRITE: { maxRequests: 20, windowMs: 60 * 1000 }, // 20 écritures par minute
