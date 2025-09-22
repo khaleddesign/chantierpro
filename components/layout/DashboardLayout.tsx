@@ -61,7 +61,6 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       case "CLIENT":
         return [
           { name: "Mon espace", href: "/dashboard/client", icon: Home },
-          { name: "Mes chantiers", href: "/dashboard/chantiers", icon: Building2 },
           { name: "Mes devis", href: "/dashboard/devis", icon: FileText },
           { name: "Planning", href: "/dashboard/planning", icon: Calendar },
           { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },

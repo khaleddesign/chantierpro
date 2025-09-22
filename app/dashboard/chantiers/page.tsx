@@ -62,6 +62,24 @@ export default function ChantiersPage() {
   const { user } = useAuth();
   const { chantiers, loading, error, pagination, fetchChantiers, clearError } = useChantiers();
   const { error: showError } = useToastContext();
+
+  // 🔒 SÉCURITÉ : Rediriger les clients vers leur espace dédié
+  if (user?.role === "CLIENT") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-gray-900 mb-2">Accès non autorisé</div>
+          <p className="text-gray-600 mb-4">Cette page est réservée aux commerciaux et administrateurs.</p>
+          <Link 
+            href="/dashboard/client"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Retourner à mon espace client
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ChantierStatus | "TOUS">("TOUS");
