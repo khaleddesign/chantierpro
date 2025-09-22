@@ -15,6 +15,7 @@ import {
 import { validateAndSanitize } from '@/lib/validations/crm';
 import { UserCreateSchema } from '@/lib/validations';
 import { z } from 'zod';
+import { Role } from "@prisma/client";
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
@@ -122,7 +123,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     throw new APIError(`Données invalides: ${userValidation.errors?.join(', ')}`, 400);
   }
 
-  const userData = userValidation.data!;
+  const userData = userValidation.data as {
+    name: string;
+    email: string;
+    password: string;
+    role: Role;
+    phone?: string;
+    company?: string;
+    address?: string;
+  };
 
   // ✅ Vérification email unique
   const existingUser = await prisma.user.findUnique({

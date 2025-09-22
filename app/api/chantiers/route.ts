@@ -1,281 +1,209 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+// Force Node.js runtime pour les opérations de base de données
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+import { NextRequest } from "next/server";
+import { 
+  withErrorHandling, 
+  requireAuth, 
+  createSuccessResponse,
+  createPaginatedResponse,
+  logUserAction,
+  checkRateLimit,
+  APIError
+} from '@/lib/api-helpers';
+import { validateAndSanitize } from '@/lib/validations/crm';
+import { ChantiersQuerySchema, ChantierCreateSchema } from '@/lib/validations';
+import { z } from 'zod';
+import { prisma } from '@/lib/prisma';
 import { ChantierStatus } from "@prisma/client";
 
-export async function GET(request: NextRequest) {
-  try {
-    console.log('🔍 API /api/chantiers appelée');
-    console.log('Database URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
-    
-    const session = await getServerSession(authOptions);
-    
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-    }
+// GET /api/chantiers - Récupérer la liste des chantiers
+export const GET = withErrorHandling(async (request: NextRequest) => {
+  const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT']);
+  
+  if (!checkRateLimit(`chantiers:${session.user.id}`, 200, 15 * 60 * 1000)) {
+    throw new APIError('Trop de requêtes, veuillez réessayer plus tard', 429);
+  }
 
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const search = searchParams.get("search") || "";
-    const status = searchParams.get("status");
-    const clientId = searchParams.get("clientId") || "";
+  const { searchParams } = new URL(request.url);
+  
+  const paramsValidation = validateAndSanitize(ChantiersQuerySchema, {
+    page: searchParams.get('page') || '1',
+    limit: searchParams.get('limit') || '20',
+    search: searchParams.get('search') || undefined,
+    status: searchParams.get('status') || undefined,
+    clientId: searchParams.get('clientId') || undefined,
+    includeDeleted: searchParams.get('includeDeleted') || undefined
+  });
 
-    const skip = (page - 1) * limit;
+  if (!paramsValidation.success) {
+    throw new APIError(`Paramètres invalides: ${paramsValidation.errors?.join(', ')}`, 400);
+  }
 
-    // Construction de la condition WHERE
-    const where: any = {
-      // Par défaut, exclure les chantiers supprimés (sauf pour les admins qui demandent explicitement)
-      deletedAt: searchParams.get("includeDeleted") === "true" && session.user.role === "ADMIN" 
-        ? undefined 
-        : null
+  const { page, limit, search, status, clientId, includeDeleted } = paramsValidation.data as {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+    clientId?: string;
+    includeDeleted?: boolean;
+  };
+  const skip = (page - 1) * limit;
+
+  // Construction des filtres selon le rôle
+  const whereClause: any = {};
+  
+  // Soft delete (sauf pour les admins qui demandent explicitement)
+  if (!includeDeleted || session.user.role !== "ADMIN") {
+    whereClause.deletedAt = null;
+  }
+  
+  // Filtrage par rôle utilisateur
+  if (session.user.role === "CLIENT") {
+    whereClause.clientId = session.user.id;
+  } else if (session.user.role === "COMMERCIAL") {
+    whereClause.client = {
+      commercialId: session.user.id
     };
-
-    // Filtrage par rôle utilisateur
-    if (session.user.role === "CLIENT") {
-      where.clientId = session.user.id;
-    } else if (session.user.role === "COMMERCIAL") {
-      where.client = {
-        commercialId: session.user.id
-      };
-    }
-
-    // Filtres additionnels
-    if (search) {
-      where.OR = [
-        { nom: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { adresse: { contains: search, mode: "insensitive" } },
-        { client: { name: { contains: search, mode: "insensitive" } } }
-      ];
-    }
-
-    if (status && status !== "TOUS") {
-      where.statut = status as ChantierStatus;
-    }
-
-    // clientId est déjà géré dans le filtrage par rôle ci-dessus
-    // Pas besoin de l'ajouter ici car cela créerait une faille de sécurité
-
-    console.log('🔍 Clause WHERE construite:', JSON.stringify(where, null, 2));
-    
-    // Récupération des chantiers avec pagination
-    const [chantiers, total] = await Promise.all([
-      prisma.chantier.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          client: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              company: true,
-              phone: true,
-            }
-          },
-          _count: {
-            select: {
-              messages: true,
-              comments: true,
-              etapes: true,
-              documents: true,
-            }
-          }
-        }
-      }),
-      prisma.chantier.count({ where })
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
-    console.log('✅ Chantiers trouvés:', chantiers.length, 'Total:', total);
-
-    return NextResponse.json({
-      chantiers,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
-      }
-    });
-
-  } catch (error) {
-    console.error("❌ Erreur lors de la récupération des chantiers:", error);
-    if (error instanceof Error) {
-      console.error("❌ Stack trace:", error.stack);
-    }
-    console.error("❌ Database URL utilisée:", process.env.DATABASE_URL?.substring(0, 50) + '...');
-    return NextResponse.json(
-      { error: "Erreur serveur interne" },
-      { status: 500 }
-    );
   }
-}
+  
+  // Filtres de recherche
+  if (search) {
+    whereClause.OR = [
+      { nom: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+      { adresse: { contains: search, mode: "insensitive" } },
+      { client: { name: { contains: search, mode: "insensitive" } } }
+    ];
+  }
+  
+  if (status && status !== "TOUS") {
+    whereClause.statut = status as ChantierStatus;
+  }
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log('🔍 API POST /api/chantiers appelée');
-    console.log('Database URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
-    
-    const session = await getServerSession(authOptions);
-    
-    console.log('🔍 Session récupérée:', {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email,
-      userRole: session?.user?.role
-    });
-    
-    if (!session) {
-      console.log('❌ Aucune session trouvée');
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-    }
-
-    // Les admins, commerciaux et clients peuvent créer des chantiers
-    if (!["ADMIN", "COMMERCIAL", "CLIENT"].includes(session.user.role)) {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
-    }
-
-    let body;
-    try {
-      body = await request.json();
-    } catch (parseError) {
-      console.log('Erreur parsing JSON dans POST /api/chantiers:', parseError);
-      return NextResponse.json({ error: "Données JSON invalides" }, { status: 400 });
-    }
-    
-    const {
-      nom,
-      description,
-      adresse,
-      clientId,
-      dateDebut,
-      dateFin,
-      budget,
-      superficie,
-      photo,
-      lat,
-      lng
-    } = body;
-
-    // Validation stricte des champs obligatoires
-    const requiredFields = ['nom', 'description', 'adresse', 'clientId', 'dateDebut', 'dateFin', 'budget'];
-    const missingFields = requiredFields.filter(field => {
-      const value = body[field];
-      return !value || (typeof value === 'string' && !value.trim());
-    });
-    
-    if (missingFields.length > 0) {
-      console.log('Champs manquants:', missingFields, 'Données reçues:', { nom, description, adresse, clientId, dateDebut, dateFin, budget, superficie });
-      return NextResponse.json(
-        { error: `Champs obligatoires manquants: ${missingFields.join(', ')}` },
-        { status: 400 }
-      );
-    }
-
-    // Validation des types et valeurs
-    if (typeof budget !== 'number' || budget < 0) {
-      return NextResponse.json({ error: "Le budget doit être un nombre positif" }, { status: 400 });
-    }
-
-    if (new Date(dateDebut) >= new Date(dateFin)) {
-      return NextResponse.json({ error: "La date de fin doit être postérieure à la date de début" }, { status: 400 });
-    }
-
-    // Pour les clients, ils ne peuvent créer que leurs propres chantiers
-    if (session.user.role === "CLIENT" && clientId !== session.user.id) {
-      return NextResponse.json(
-        { error: "Un client ne peut créer que ses propres chantiers" },
-        { status: 403 }
-      );
-    }
-
-    // Vérifier que le client existe
-    const client = await prisma.user.findUnique({
-      where: { id: clientId },
-      select: { id: true, role: true }
-    });
-
-    if (!client || client.role !== "CLIENT") {
-      return NextResponse.json(
-        { error: "Client non valide" },
-        { status: 400 }
-      );
-    }
-
-    // Créer le chantier et l'événement timeline dans une transaction
-    const chantier = await prisma.$transaction(async (tx) => {
-      // Créer le chantier
-      const newChantier = await tx.chantier.create({
-        data: {
-          nom,
-          description,
-          adresse,
-          clientId,
-          dateDebut: new Date(dateDebut),
-          dateFin: new Date(dateFin),
-          budget: budget,
-          superficie,
-          photo,
-          lat: lat ? parseFloat(lat) : null,
-          lng: lng ? parseFloat(lng) : null,
-          statut: "PLANIFIE",
-          progression: 0,
+  const [chantiers, total] = await Promise.all([
+    prisma.chantier.findMany({
+      where: whereClause,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            company: true,
+            phone: true,
+          }
         },
-        include: {
-          client: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              company: true,
-              phone: true,
-            }
-          },
-          _count: {
-            select: {
-              messages: true,
-              comments: true,
-              etapes: true,
-            }
+        _count: {
+          select: {
+            messages: true,
+            comments: true,
+            etapes: true,
+            documents: true,
           }
         }
-      });
-
-      // Créer un événement de timeline pour la création (optionnel)
-      try {
-        await tx.timelineEvent.create({
-          data: {
-            chantierId: newChantier.id,
-            titre: "Chantier créé",
-            description: `Le chantier "${nom}" a été créé et planifié.`,
-            date: new Date(),
-            type: "DEBUT",
-            createdById: session.user.id,
-          }
-        });
-      } catch (timelineError) {
-        console.warn('Erreur création timeline (non bloquante):', timelineError);
-        // Ne pas faire échouer la transaction pour cette erreur
       }
+    }),
+    prisma.chantier.count({ where: whereClause })
+  ]);
 
-      return newChantier;
-    });
+  await logUserAction(
+    session.user.id, 
+    'GET_CHANTIERS', 
+    'chantiers', 
+    undefined, 
+    { search, status, clientId, page, limit, total: chantiers.length },
+    request
+  );
 
-    return NextResponse.json(chantier, { status: 201 });
+  return createPaginatedResponse(chantiers, total, page, limit, 'Chantiers récupérés avec succès');
+});
 
-  } catch (error) {
-    console.error("Erreur lors de la création du chantier:", error);
-    return NextResponse.json(
-      { error: "Erreur serveur interne" },
-      { status: 500 }
-    );
+// POST /api/chantiers - Créer un nouveau chantier
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  const session = await requireAuth(['ADMIN', 'COMMERCIAL']);
+  
+  if (!checkRateLimit(`chantiers:${session.user.id}`, 10, 15 * 60 * 1000)) {
+    throw new APIError('Trop de créations, veuillez réessayer plus tard', 429);
   }
-}
+
+  const body = await request.json();
+  
+  const validation = validateAndSanitize(ChantierCreateSchema, body);
+  if (!validation.success) {
+    throw new APIError(`Données invalides: ${validation.errors?.join(', ')}`, 400);
+  }
+
+  const chantierData = validation.data as {
+    nom: string;
+    description: string;
+    adresse: string;
+    clientId: string;
+    dateDebut: string;
+    dateFin: string;
+    budget: number;
+    superficie?: string;
+    photo?: string;
+    photos?: string;
+    lat?: number;
+    lng?: number;
+  };
+
+  // Vérifier que le client existe
+  const client = await prisma.user.findUnique({
+    where: { id: chantierData.clientId },
+    select: { id: true, role: true, commercialId: true }
+  });
+
+  if (!client) {
+    throw new APIError('Client non trouvé', 400);
+  }
+
+  // Vérifier les permissions pour les commerciaux
+  if (session.user.role === "COMMERCIAL" && client.commercialId !== session.user.id) {
+    throw new APIError('Permissions insuffisantes pour ce client', 403);
+  }
+
+  const newChantier = await prisma.chantier.create({
+    data: {
+      nom: chantierData.nom,
+      description: chantierData.description,
+      adresse: chantierData.adresse,
+      clientId: chantierData.clientId,
+      dateDebut: new Date(chantierData.dateDebut),
+      dateFin: new Date(chantierData.dateFin),
+      budget: chantierData.budget,
+      superficie: chantierData.superficie || "",
+      photo: chantierData.photo,
+      photos: chantierData.photos,
+      lat: chantierData.lat,
+      lng: chantierData.lng
+    },
+    include: {
+      client: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          company: true,
+          phone: true,
+        }
+      }
+    }
+  });
+
+  await logUserAction(
+    session.user.id, 
+    'CREATE_CHANTIER', 
+    'chantiers', 
+    newChantier.id, 
+    { nom: newChantier.nom, clientId: newChantier.clientId, budget: newChantier.budget },
+    request
+  );
+
+  return createSuccessResponse(newChantier, 'Chantier créé avec succès', 201);
+});
