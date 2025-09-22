@@ -34,6 +34,18 @@ function ClientDashboardContent() {
 
   if (!user) return null;
 
+  // Vérifier que l'utilisateur est bien un client
+  if (user.role !== "CLIENT") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-gray-900">Accès non autorisé</div>
+          <p className="text-gray-600 mt-2">Cette page est réservée aux clients.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Header personnalisé client */}

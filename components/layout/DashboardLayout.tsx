@@ -55,6 +55,40 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
     { name: "Rapports", href: "/dashboard/reports", icon: BarChart3 },
   ];
 
+  // Navigation adaptée selon le rôle
+  const getNavigationForRole = () => {
+    switch (user.role) {
+      case "CLIENT":
+        return [
+          { name: "Mon espace", href: "/dashboard/client", icon: Home },
+          { name: "Mes chantiers", href: "/dashboard/chantiers", icon: Building2 },
+          { name: "Mes devis", href: "/dashboard/devis", icon: FileText },
+          { name: "Planning", href: "/dashboard/planning", icon: Calendar },
+          { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+          { name: "Documents", href: "/dashboard/documents", icon: FolderOpen },
+          { name: "Mon profil", href: "/dashboard/profile", icon: Settings },
+        ];
+      case "COMMERCIAL":
+        return [
+          { name: "Tableau de bord", href: "/dashboard", icon: Home },
+          { name: "Chantiers", href: "/dashboard/chantiers", icon: Building2 },
+          { name: "Devis", href: "/dashboard/devis", icon: FileText },
+          { name: "Factures", href: "/dashboard/factures", icon: CreditCard },
+          { name: "Planning", href: "/dashboard/planning", icon: Calendar },
+          { name: "Messages", href: "/dashboard/messages", icon: MessageSquare },
+          { name: "Documents", href: "/dashboard/documents", icon: FolderOpen },
+          { name: "CRM", href: "/dashboard/crm", icon: Target },
+          { name: "Rapports", href: "/dashboard/reports", icon: BarChart3 },
+        ];
+      case "ADMIN":
+        return navigation; // Navigation complète pour les admins
+      default:
+        return navigation;
+    }
+  };
+
+  const roleNavigation = getNavigationForRole();
+
   const adminNavigation = [
     { name: "Administration", href: "/dashboard/admin", icon: Settings },
     { name: "Bibliothèque Prix", href: "/dashboard/admin/bibliotheque", icon: PlusCircle },
@@ -75,27 +109,43 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           {/* Header */}
           <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <div className="flex items-center flex-shrink-0 px-4 mb-8">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+              <div className={`w-10 h-10 bg-gradient-to-r ${
+                user.role === "CLIENT" ? "from-green-600 to-blue-600" : 
+                user.role === "COMMERCIAL" ? "from-purple-600 to-indigo-600" :
+                "from-blue-600 to-indigo-600"
+              } rounded-xl flex items-center justify-center`}>
                 <Building2 className="h-6 w-6 text-white" />
               </div>
-              <h1 className="ml-3 text-xl font-bold text-gray-900">ChantierPro</h1>
+              <h1 className="ml-3 text-xl font-bold text-gray-900">
+                {user.role === "CLIENT" ? "Espace Client" : "ChantierPro"}
+              </h1>
             </div>
 
             {/* Navigation */}
             <nav className="mt-5 flex-1 px-2 space-y-1">
-              {navigation.map((item) => (
+              {roleNavigation.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
                     isActive(item.href)
-                      ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                      ? user.role === "CLIENT" 
+                        ? "bg-green-50 text-green-700 border-r-2 border-green-700"
+                        : user.role === "COMMERCIAL"
+                        ? "bg-purple-50 text-purple-700 border-r-2 border-purple-700"
+                        : "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
                   <item.icon
                     className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                      isActive(item.href) ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500"
+                      isActive(item.href) 
+                        ? user.role === "CLIENT" 
+                          ? "text-green-500" 
+                          : user.role === "COMMERCIAL"
+                          ? "text-purple-500"
+                          : "text-blue-500"
+                        : "text-gray-400 group-hover:text-gray-500"
                     }`}
                   />
                   {item.name}
