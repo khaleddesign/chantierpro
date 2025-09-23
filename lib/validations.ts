@@ -90,7 +90,7 @@ export const DevisQuerySchema = z.object({
 export const DevisCreateSchema = z.object({
   clientId: z.string().min(1, "Client requis"),
   type: z.enum(['DEVIS', 'FACTURE', 'AVOIR']),
-  objet: z.string().min(1, "Objet requis"),
+  objet: z.string().optional(),
   dateEcheance: z.string().datetime(),
   lignes: z.array(z.object({
     description: z.string().min(1, "Description requise"),
@@ -102,5 +102,6 @@ export const DevisCreateSchema = z.object({
   modalitesPaiement: z.string().optional(),
   tva: z.number().min(0).max(100).default(20),
   retenueGarantie: z.number().min(0).max(100).default(0),
-  autoliquidation: z.boolean().default(false)
+  autoliquidation: z.boolean().default(false),
+  chantierId: z.string().optional()
 });
