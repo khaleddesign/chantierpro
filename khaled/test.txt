@@ -1,3 +1,0 @@
-Test de synchronisation GitHub
-Créé le: $(date)
-Commit: Test ajout dossier khaled
