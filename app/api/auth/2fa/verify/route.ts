@@ -49,12 +49,13 @@ export async function POST(request: NextRequest) {
     let isValidCode = false;
 
     // Vérifier si c'est un code TOTP
-    isValidCode = speakeasy.totp.verify({
+    const totpResult = speakeasy.totp.verify({
       secret: user.twoFactorSecret,
       encoding: 'base32',
       token: code,
       window: 2 // Permet une certaine tolérance temporelle
     });
+    isValidCode = Boolean(totpResult);
 
     // Si le code TOTP n'est pas valide, vérifier les codes de backup
     if (!isValidCode && user.backupCodes) {
