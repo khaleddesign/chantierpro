@@ -21,10 +21,10 @@ function ClientDashboardContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <User size={32} />
+            <User size={32} className="text-white" />
           </div>
           <div className="text-lg font-semibold text-gray-900">Chargement de votre espace...</div>
         </div>
@@ -37,7 +37,7 @@ function ClientDashboardContent() {
   // Vérifier que l'utilisateur est bien un client
   if (user.role !== "CLIENT") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="text-lg font-semibold text-gray-900">Accès non autorisé</div>
           <p className="text-gray-600 mt-2">Cette page est réservée aux clients.</p>
@@ -48,7 +48,7 @@ function ClientDashboardContent() {
 
   return (
     <div className="space-y-8">
-      {/* Header personnalisé client */}
+      {/* Header personnalisé client - SANS le full screen */}
       <div className="bg-gradient-to-br from-green-600 via-blue-600 to-teal-600 rounded-3xl p-8 text-white shadow-xl">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-6 mb-6 lg:mb-0">
@@ -82,7 +82,7 @@ function ClientDashboardContent() {
             icon: Building2, 
             color: "from-blue-500 to-blue-600",
             bgColor: "bg-blue-50",
-            href: "/dashboard/client/chantiers"
+            href: "/dashboard/chantiers"
           },
           { 
             title: "Devis Reçus", 
@@ -91,7 +91,7 @@ function ClientDashboardContent() {
             icon: FileText, 
             color: "from-green-500 to-green-600",
             bgColor: "bg-green-50",
-            href: "/dashboard/client/devis"
+            href: "/dashboard/devis"
           },
           { 
             title: "Messages", 
@@ -100,7 +100,7 @@ function ClientDashboardContent() {
             icon: MessageSquare, 
             color: "from-purple-500 to-purple-600",
             bgColor: "bg-purple-50",
-            href: "/dashboard/client/messages"
+            href: "/dashboard/messages"
           },
           { 
             title: "Planning", 
@@ -109,7 +109,7 @@ function ClientDashboardContent() {
             icon: Calendar, 
             color: "from-orange-500 to-orange-600",
             bgColor: "bg-orange-50",
-            href: "/dashboard/client/planning"
+            href: "/dashboard/planning"
           }
         ].map((stat, index) => (
           <Link
@@ -143,7 +143,7 @@ function ClientDashboardContent() {
                 Chantiers en Cours
               </h3>
               <Link 
-                href="/dashboard/client/chantiers"
+                href="/dashboard/chantiers"
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
                 Voir tout
@@ -196,7 +196,7 @@ function ClientDashboardContent() {
                 Devis Récents
               </h3>
               <Link 
-                href="/dashboard/client/devis"
+                href="/dashboard/devis"
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium"
               >
                 Voir tout
