@@ -17,48 +17,51 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            password: true,
-            role: true,
-            company: true,
-            image: true,
+        try {
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              password: true,
+              role: true,
+              company: true,
+              image: true,
+            }
+          });
+
+          if (!user || !user.password) {
+            return null;
           }
-        });
 
-        if (!user || !user.password) {
+          const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isValidPassword) {
+            return null;
+          }
+
+          return {
+            id: user.id,
+            name: user.name || user.email.split('@')[0],
+            email: user.email,
+            role: user.role,
+            company: user.company || undefined,
+            image: user.image || undefined,
+          };
+        } catch (error) {
+          console.error('Auth error:', error);
           return null;
         }
-
-        const isValidPassword = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isValidPassword) {
-          return null;
-        }
-
-        // ✅ CORRECTION : S'assurer que name est défini
-        return {
-          id: user.id,
-          name: user.name || user.email.split('@')[0], // Fallback intelligent
-          email: user.email,
-          role: user.role,
-          company: user.company || undefined,
-          image: user.image || undefined,
-        };
       }
     })
   ],
   
   callbacks: {
-    // ✅ CALLBACK JWT : Préserver les données utilisateur
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.name = user.name || user.email?.split('@')[0] || 'Utilisateur'; // ✅ Fallback robuste
+        token.name = user.name || user.email?.split('@')[0] || 'Utilisateur';
         token.email = user.email;
         token.role = user.role;
         token.company = user.company;
@@ -67,12 +70,11 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
 
-    // ✅ CALLBACK SESSION : Mapper correctement les données
     async session({ session, token }) {
       if (token) {
         session.user = {
           id: token.id as string,
-          name: token.name as string, // ✅ Garanti d'être défini
+          name: token.name as string,
           email: token.email as string,
           role: token.role as Role,
           company: token.company as string,
@@ -85,61 +87,25 @@ export const authOptions: NextAuthOptions = {
   
   session: {
     strategy: "jwt",
-    maxAge: 4 * 60 * 60, // 4 heures au lieu de 30 jours
-    updateAge: 60 * 60,  // Mise à jour toutes les heures
+    maxAge: 30 * 24 * 60 * 60, // ✅ 30 jours au lieu de 4 heures
+    updateAge: 24 * 60 * 60,    // ✅ Mise à jour toutes les 24h
   },
+  
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
   
-  // 🔒 PROTECTION CSRF ET COOKIES SÉCURISÉS
+  // ✅ CONFIGURATION SIMPLIFIÉE DES COOKIES
   useSecureCookies: process.env.NODE_ENV === 'production',
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.session-token' 
-        : 'next-auth.session-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' 
-          ? process.env.NEXTAUTH_URL?.replace(/^https?:\/\//, '') 
-          : undefined,
-      },
-    },
-    callbackUrl: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.callback-url' 
-        : 'next-auth.callback-url',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-    csrfToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Host-next-auth.csrf-token' 
-        : 'next-auth.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-      },
-    },
-  },
   
-  // 🛡️ PROTECTION CSRF ACTIVÉE (par défaut dans NextAuth)
+  // ✅ SUPPRESSION DE LA CONFIG COOKIES COMPLEXE
+  // Les cookies par défaut de NextAuth fonctionnent mieux avec Vercel
   
-  // 🔐 CONFIGURATION DE SÉCURITÉ AVANCÉE
   jwt: {
-    maxAge: 4 * 60 * 60, // 4 heures
+    maxAge: 30 * 24 * 60 * 60, // ✅ 30 jours
   },
 };
