@@ -109,7 +109,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      pages: Math.ceil(total / limit), // ✅ pages au lieu de totalPages
       hasNext: page < Math.ceil(total / limit),
       hasPrev: page > 1
     },

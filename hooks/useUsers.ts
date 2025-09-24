@@ -52,8 +52,13 @@ export function useUsers(options: UseUsersOptions = {}) {
       const data = await response.json();
       
       if (data.success) {
-        setUsers(data.users);
-        setPagination(data.pagination);
+        setUsers(data.users || []);
+        setPagination(data.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0
+        });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
       }
