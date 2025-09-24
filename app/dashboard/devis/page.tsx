@@ -192,7 +192,7 @@ export default function DevisPage() {
     }
   };
 
-  const sortedDevis = [...devis].sort((a, b) => {
+  const sortedDevis = [...(devis || [])].sort((a, b) => {
     let aValue, bValue;
     
     switch (sortBy) {
@@ -241,7 +241,7 @@ export default function DevisPage() {
 
   const RenderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {devis.map((devis) => (
+      {(devis || []).map((devis) => (
         <div key={devis.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 group overflow-hidden">
           <div className="relative p-6 bg-gradient-to-br from-indigo-50 to-purple-50">
             <div className="absolute top-3 left-3">
@@ -354,7 +354,7 @@ export default function DevisPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {devis.map((devis) => (
+            {(devis || []).map((devis) => (
               <tr key={devis.id} className="hover:bg-gray-50">
                 <td className="py-3 px-4">
                   <div>
@@ -466,7 +466,7 @@ export default function DevisPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {sortedDevis.map((devis) => (
+            {(sortedDevis || []).map((devis) => (
               <tr key={devis.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>

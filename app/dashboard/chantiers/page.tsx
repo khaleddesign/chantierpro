@@ -160,7 +160,7 @@ export default function ChantiersPage() {
     }
   };
 
-  const sortedChantiers = [...chantiers].sort((a, b) => {
+  const sortedChantiers = [...(chantiers || [])].sort((a, b) => {
     let aValue: any = a[sortBy as keyof typeof a];
     let bValue: any = b[sortBy as keyof typeof b];
 
@@ -213,8 +213,8 @@ export default function ChantiersPage() {
   const handleFormSuccess = async () => {
     try {
       await fetchChantiers({
-        page: pagination.page,
-        limit: pagination.limit,
+        page: pagination?.page || 1, // ✅ Protection ajoutée
+        limit: pagination?.limit || 10, // ✅ Protection ajoutée
         search: search || undefined,
         status: statusFilter === 'TOUS' ? undefined : statusFilter,
       });
@@ -227,14 +227,14 @@ export default function ChantiersPage() {
   };
 
   // Statistiques des chantiers
-  const chantiersEnCours = chantiers.filter(c => c.statut === 'EN_COURS').length;
-  const chantiersPlanifies = chantiers.filter(c => c.statut === 'PLANIFIE').length;
-  const chantiersTermines = chantiers.filter(c => c.statut === 'TERMINE').length;
-  const budgetTotal = chantiers.reduce((sum, c) => sum + c.budget, 0);
+  const chantiersEnCours = (chantiers || []).filter(c => c.statut === 'EN_COURS').length;
+  const chantiersPlanifies = (chantiers || []).filter(c => c.statut === 'PLANIFIE').length;
+  const chantiersTermines = (chantiers || []).filter(c => c.statut === 'TERMINE').length;
+  const budgetTotal = (chantiers || []).reduce((sum, c) => sum + c.budget, 0);
 
   const RenderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {chantiers.map((chantier) => (
+      {(chantiers || []).map((chantier) => (
         <Link 
           href={`/dashboard/chantiers/${chantier.id}`} 
           key={chantier.id}
@@ -344,7 +344,7 @@ export default function ChantiersPage() {
 
   const RenderListView = () => (
     <div className="space-y-3">
-      {chantiers.map((chantier) => (
+      {(chantiers || []).map((chantier) => (
         <Link 
           href={`/dashboard/chantiers/${chantier.id}`} 
           key={chantier.id}
@@ -466,7 +466,7 @@ export default function ChantiersPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {sortedChantiers.map((chantier) => (
+            {(sortedChantiers || []).map((chantier) => (
               <tr key={chantier.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <Link
