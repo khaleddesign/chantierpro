@@ -101,8 +101,20 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     request
   );
 
-  // ✅ Réponse standardisée
-  return createPaginatedResponse(users, total, page, limit, 'Utilisateurs récupérés avec succès');
+  // ✅ Réponse standardisée avec format attendu par le frontend
+  return NextResponse.json({
+    success: true,
+    users: users,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1
+    },
+    message: 'Utilisateurs récupérés avec succès'
+  });
 });
 
 // POST /api/users - Créer un nouvel utilisateur

@@ -106,10 +106,14 @@ function NouveauDevisPageContent() {
   const fetchClients = async () => {
     setLoadingClients(true);
     try {
-      const response = await fetch('/api/users?role=CLIENT');
+      const response = await fetch('/api/users?role=CLIENT', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setClients(data.users || []);
+      } else {
+        console.error('Erreur API:', response.status, response.statusText);
       }
     } catch (err) {
       console.error('Erreur lors du chargement des clients:', err);
@@ -126,10 +130,14 @@ function NouveauDevisPageContent() {
 
     setLoadingChantiers(true);
     try {
-      const response = await fetch(`/api/chantiers?clientId=${clientId}`);
+      const response = await fetch(`/api/chantiers?clientId=${clientId}`, {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setChantiers(data.chantiers || []);
+      } else {
+        console.error('Erreur API chantiers:', response.status, response.statusText);
       }
     } catch (err) {
       console.error('Erreur lors du chargement des chantiers:', err);

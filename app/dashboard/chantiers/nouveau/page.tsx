@@ -79,10 +79,14 @@ export default function NouveauChantierPage() {
     // Pour les admins et commerciaux, charger tous les clients
     setLoadingClients(true);
     try {
-      const response = await fetch('/api/users?role=CLIENT');
+      const response = await fetch('/api/users?role=CLIENT', {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         setClients(data.users || []);
+      } else {
+        console.error('Erreur API:', response.status, response.statusText);
       }
     } catch (err) {
       console.error('Erreur lors du chargement des clients:', err);
