@@ -2,7 +2,7 @@
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { 
   withErrorHandling, 
   requireAuth, 
