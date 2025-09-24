@@ -97,7 +97,7 @@ export default function ChantiersPage() {
       
       fetchChantiers({
         page: 1, // Reset à la page 1 lors d'une nouvelle recherche
-        limit: pagination.limit,
+        limit: pagination?.limit || 10, // ✅ Protection contre undefined
         search: search || undefined,
         status: statusFilter === 'TOUS' ? undefined : statusFilter,
       });
@@ -108,15 +108,16 @@ export default function ChantiersPage() {
 
   // Effet séparé pour la pagination
   useEffect(() => {
-    if (pagination.page > 1) {
+    // ✅ Protection complète contre les objets undefined
+    if (pagination?.page && pagination.page > 1) {
       fetchChantiers({
         page: pagination.page,
-        limit: pagination.limit,
+        limit: pagination.limit || 10,
         search: search || undefined,
         status: statusFilter === 'TOUS' ? undefined : statusFilter,
       });
     }
-  }, [pagination.page]);
+  }, [pagination?.page]); // ✅ Accès protégé
 
   // Afficher les erreurs avec toast
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function ChantiersPage() {
   const handlePageChange = (newPage: number) => {
     fetchChantiers({
       page: newPage,
-      limit: pagination.limit,
+      limit: pagination?.limit || 10, // ✅ Protection
       search: search || undefined,
       status: statusFilter,
     });
@@ -666,7 +667,7 @@ export default function ChantiersPage() {
   );
 
   const Pagination = () => {
-    if (pagination.totalPages <= 1) return null;
+    if (!pagination || pagination.totalPages <= 1) return null; // ✅ Protection
 
     return (
       <div className="flex items-center justify-between bg-white px-6 py-3 border border-gray-200 rounded-lg">
@@ -684,15 +685,15 @@ export default function ChantiersPage() {
             variant="outline"
             size="sm"
             onClick={() => handlePageChange(pagination.page - 1)}
-            disabled={!pagination.hasPrevPage || loading}
+            disabled={!pagination?.hasPrevPage || loading} // ✅ Protection
           >
             Précédent
           </Button>
           
           {/* Pages numbers */}
-          {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-            const page = i + 1;
-            const isActive = page === pagination.page;
+        {Array.from({ length: Math.min(5, pagination?.totalPages || 1) }, (_, i) => { // ✅ Protection
+          const page = i + 1;
+          const isActive = page === pagination?.page; // ✅ Protection
             return (
               <Button
                 key={page}
@@ -710,7 +711,7 @@ export default function ChantiersPage() {
             variant="outline"
             size="sm"
             onClick={() => handlePageChange(pagination.page + 1)}
-            disabled={!pagination.hasNextPage || loading}
+            disabled={!pagination?.hasNextPage || loading} // ✅ Protection
           >
             Suivant
           </Button>

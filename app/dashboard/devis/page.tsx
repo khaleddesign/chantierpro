@@ -141,7 +141,7 @@ export default function DevisPage() {
   const handlePageChange = (newPage: number) => {
     fetchDevis({
       page: newPage,
-      limit: pagination.limit,
+      limit: pagination?.limit || 10, // ✅ Protection
       search: search || undefined,
       status: statusFilter,
       type: typeFilter === "TOUS" ? undefined : typeFilter,
@@ -165,8 +165,8 @@ export default function DevisPage() {
 
   const handleFormSuccess = () => {
     fetchDevis({
-      page: pagination.page,
-      limit: pagination.limit,
+      page: pagination?.page || 1, // ✅ Protection
+      limit: pagination?.limit || 10, // ✅ Protection
       search: search || undefined,
       status: statusFilter,
       type: typeFilter === "TOUS" ? undefined : typeFilter,
@@ -591,7 +591,7 @@ export default function DevisPage() {
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <span>
-          {pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1} - {Math.min(pagination.page * pagination.limit, pagination.total)} sur {pagination.total}
+          {pagination?.total === 0 ? 0 : ((pagination?.page || 1) - 1) * (pagination?.limit || 10) + 1} - {Math.min((pagination?.page || 1) * (pagination?.limit || 10), pagination?.total || 0)} sur {pagination?.total || 0}
         </span>
       </div>
       
@@ -599,19 +599,19 @@ export default function DevisPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(pagination.page - 1)}
-          disabled={!pagination.hasPrevPage}
+          onClick={() => handlePageChange((pagination?.page || 1) - 1)}
+          disabled={!pagination?.hasPrevPage}
         >
           Précédent
         </Button>
         
         <div className="flex items-center gap-1">
-          {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+          {Array.from({ length: Math.min(5, pagination?.totalPages || 1) }, (_, i) => {
             const pageNum = i + 1;
             return (
               <Button
                 key={pageNum}
-                variant={pageNum === pagination.page ? "default" : "outline"}
+                variant={pageNum === (pagination?.page || 1) ? "default" : "outline"}
                 size="sm"
                 onClick={() => handlePageChange(pageNum)}
                 className="w-8 h-8 p-0"
@@ -625,8 +625,8 @@ export default function DevisPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => handlePageChange(pagination.page + 1)}
-          disabled={!pagination.hasNextPage}
+          onClick={() => handlePageChange((pagination?.page || 1) + 1)}
+          disabled={!pagination?.hasNextPage}
         >
           Suivant
         </Button>
