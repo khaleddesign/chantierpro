@@ -12,55 +12,16 @@ const nextConfig = {
     domains: ['images.unsplash.com', 'localhost'],
   },
   typescript: {
-    ignoreBuildErrors: false, // 🔴 Configuration stricte - révéler tous les warnings
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true, // ✅ Permettre le déploiement en ignorant les warnings ESLint
+    ignoreDuringBuilds: true,
   },
-  // Optimisations de cache
-  experimental: {
-    staleTimes: {
-      dynamic: 30, // 30 secondes pour les pages dynamiques
-      static: 180, // 3 minutes pour les pages statiques
-    },
-  },
-  // Cache des headers
-  async headers() {
+  async rewrites() {
     return [
       {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-          {
-            key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
-          },
-        ],
-      },
-      {
-        source: '/api/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=300, stale-while-revalidate=600',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
+        source: '/api/:path*',
+        destination: '/api/:path*',
       },
     ]
   },

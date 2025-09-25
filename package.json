@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:vercel": "npx prisma generate && npx prisma migrate deploy && next build",
+    "build": "npx prisma generate && next build",
+    "build:vercel": "npx prisma generate && npx prisma db push && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
@@ -22,7 +22,8 @@
     "db:migrate": "prisma migrate deploy",
     "db:reset": "prisma migrate reset",
     "db:migrate:dev": "prisma migrate dev",
-    "verify": "node verify.js"
+    "verify": "node verify.js",
+    "postinstall": "npx prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
