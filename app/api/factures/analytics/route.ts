@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 type FactureWithRelations = Prisma.DevisGetPayload<{
@@ -12,7 +12,7 @@ type FactureWithRelations = Prisma.DevisGetPayload<{
 export async function GET(request: NextRequest) {
   try {
     try {
-      const factures = await db.devis.findMany({
+      const factures = await prisma.devis.findMany({
         where: { type: 'FACTURE' },
         include: {
           paiements: true,

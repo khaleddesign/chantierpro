@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const etape = await db.etapeChantier.findUnique({
+    const etape = await prisma.etapeChantier.findUnique({
       where: { id },
       include: {
         chantier: {
@@ -39,7 +39,7 @@ export async function PUT(
   try {
     const data = await request.json();
     
-    const etape = await db.etapeChantier.findUnique({
+    const etape = await prisma.etapeChantier.findUnique({
       where: { id },
       select: { id: true, chantierId: true }
     });
@@ -75,7 +75,7 @@ export async function PUT(
       return NextResponse.json({ error: 'La date de fin doit être après la date de début' }, { status: 400 });
     }
 
-    const updatedEtape = await db.etapeChantier.update({
+    const updatedEtape = await prisma.etapeChantier.update({
       where: { id },
       data: updateData,
       include: {
@@ -99,7 +99,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    const etape = await db.etapeChantier.findUnique({
+    const etape = await prisma.etapeChantier.findUnique({
       where: { id },
       select: { id: true }
     });
@@ -108,7 +108,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Étape introuvable' }, { status: 404 });
     }
 
-    await db.etapeChantier.delete({
+    await prisma.etapeChantier.delete({
       where: { id }
     });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { requireAuth } from '@/lib/api-helpers';
 
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     try {
       const [prix, total, corpsEtats] = await Promise.all([
-        db.bibliothequePrix.findMany({
+        prisma.bibliothequePrix.findMany({
           where,
           orderBy: [
             { corpsEtat: 'asc' },
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
           take: limit,
           skip: offset
         }),
-        db.bibliothequePrix.count({ where }),
-        db.bibliothequePrix.findMany({
+        prisma.bibliothequePrix.count({ where }),
+        prisma.bibliothequePrix.findMany({
           select: { corpsEtat: true },
           distinct: ['corpsEtat'],
           orderBy: { corpsEtat: 'asc' }
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // Vérifier l'unicité du code
-      const existingCode = await db.bibliothequePrix.findUnique({
+      const existingCode = await prisma.bibliothequePrix.findUnique({
         where: { code: data.code }
       });
 
@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Ce code existe déjà' }, { status: 400 });
       }
 
-      const nouveauPrix = await db.bibliothequePrix.create({
+      const nouveauPrix = await prisma.bibliothequePrix.create({
         data: {
           code: data.code,
           designation: data.designation,

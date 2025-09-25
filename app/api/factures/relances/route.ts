@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       const whereClause: Prisma.RelanceWhereInput = {};
       if (factureId) whereClause.factureId = factureId;
 
-      relances = await db.relance.findMany({
+      relances = await prisma.relance.findMany({
         where: whereClause,
         include: {
           facture: {
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const facture = await db.devis.findUnique({
+      const facture = await prisma.devis.findUnique({
         where: { id: factureId },
         include: { client: true }
       });
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Facture introuvable' }, { status: 404 });
       }
 
-      const relance = await db.relance.create({
+      const relance = await prisma.relance.create({
         data: {
           factureId,
           type,

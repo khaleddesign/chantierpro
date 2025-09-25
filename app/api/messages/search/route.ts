@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 interface SearchFilters {
@@ -172,7 +172,7 @@ async function searchMessages(
     whereClause.typeMessage = filters.messageType;
   }
 
-  const messages = await db.message.findMany({
+  const messages = await prisma.message.findMany({
     where: whereClause,
     include: {
       expediteur: {
@@ -219,7 +219,7 @@ async function searchContacts(
     ]
   };
 
-  const users = await db.user.findMany({
+  const users = await prisma.user.findMany({
     where: whereClause,
     select: {
       id: true,
@@ -264,7 +264,7 @@ async function searchFiles(
     whereClause.chantierId = filters.chantier;
   }
 
-  const messagesWithFiles = await db.message.findMany({
+  const messagesWithFiles = await prisma.message.findMany({
     where: whereClause,
     include: {
       expediteur: {

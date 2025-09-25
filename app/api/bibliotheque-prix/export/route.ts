@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // POST - Exporter la bibliothèque de prix
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const prix = await db.bibliothequePrix.findMany({
+      const prix = await prisma.bibliothequePrix.findMany({
         where,
         orderBy: [
           { corpsEtat: 'asc' },

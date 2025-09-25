@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // POST - Importer des prix depuis un fichier CSV/JSON
 export async function POST(request: NextRequest) {
@@ -90,13 +90,13 @@ export async function POST(request: NextRequest) {
       let skipped = 0;
 
       for (const prixData of validEntries) {
-        const existingPrix = await db.bibliothequePrix.findUnique({
+        const existingPrix = await prisma.bibliothequePrix.findUnique({
           where: { code: prixData.code }
         });
 
         if (existingPrix) {
           if (overwrite) {
-            await db.bibliothequePrix.update({
+            await prisma.bibliothequePrix.update({
               where: { code: prixData.code },
               data: prixData
             });
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
             skipped++;
           }
         } else {
-          await db.bibliothequePrix.create({
+          await prisma.bibliothequePrix.create({
             data: prixData
           });
           imported++;

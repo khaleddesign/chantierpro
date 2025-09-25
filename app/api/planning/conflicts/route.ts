@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const conflicts = await db.planning.findMany({
+      const conflicts = await prisma.planning.findMany({
         where: {
           AND: [
             excludeId ? { NOT: { id: excludeId } } : {},

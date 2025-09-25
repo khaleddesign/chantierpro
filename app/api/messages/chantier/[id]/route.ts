@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +13,7 @@ export async function GET(
     const offset = (page - 1) * limit;
 
     const [messages, total] = await Promise.all([
-      db.message.findMany({
+      prisma.message.findMany({
         where: { chantierId: id },
         include: {
           expediteur: {
@@ -24,7 +24,7 @@ export async function GET(
         take: limit,
         skip: offset
       }),
-      db.message.count({
+      prisma.message.count({
         where: { chantierId: id }
       })
     ]);

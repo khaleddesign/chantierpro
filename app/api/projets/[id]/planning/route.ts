@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const projet = await db.projet.findUnique({
+    const projet = await prisma.projet.findUnique({
       where: { id },
       include: {
         taches: {

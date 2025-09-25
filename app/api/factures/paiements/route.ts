@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { requireAuth, logUserAction } from '@/lib/api-helpers';
 import { withRateLimit } from '@/lib/rate-limiter';
@@ -19,7 +19,7 @@ async function getPaiementsHandler(request: NextRequest) {
       if (factureId) whereClause.factureId = factureId;
       // Note: Le modèle Paiement n'a pas de champ status selon le schéma Prisma
 
-      paiements = await db.paiement.findMany({
+      paiements = await prisma.paiement.findMany({
         where: whereClause,
         include: {
           facture: {
@@ -64,7 +64,7 @@ async function createPaiementHandler(request: NextRequest) {
     }
 
     try {
-      const paiement = await db.paiement.create({
+      const paiement = await prisma.paiement.create({
         data: {
           factureId,
           montant: parseFloat(montant),
@@ -77,7 +77,7 @@ async function createPaiementHandler(request: NextRequest) {
         }
       });
 
-      await db.devis.update({
+      await prisma.devis.update({
         where: { id: factureId },
         data: { 
           statut: 'PAYE'

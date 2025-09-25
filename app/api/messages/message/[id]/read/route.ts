@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function PUT(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const message = await db.message.update({
+    const message = await prisma.message.update({
       where: { id },
       data: { lu: true },
       include: {
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'chantierId et userId requis' }, { status: 400 });
     }
 
-    const result = await db.message.updateMany({
+    const result = await prisma.message.updateMany({
       where: {
         chantierId,
         expediteurId: { not: userId },

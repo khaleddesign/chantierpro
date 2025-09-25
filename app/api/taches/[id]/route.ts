@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    const tache = await db.tacheProjet.findUnique({
+    const tache = await prisma.tacheProjet.findUnique({
       where: { id },
       include: {
         projet: true,
@@ -36,7 +36,7 @@ export async function PUT(
   try {
     const updates = await request.json();
     
-    const tache = await db.tacheProjet.update({
+    const tache = await prisma.tacheProjet.update({
       where: { id },
       data: updates,
       include: {
@@ -60,7 +60,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
   try {
-    await db.tacheProjet.delete({
+    await prisma.tacheProjet.delete({
       where: { id }
     });
 

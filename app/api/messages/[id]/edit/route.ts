@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function PUT(
   request: NextRequest,
@@ -24,7 +24,7 @@ export async function PUT(
     }
 
     try {
-      const existingMessage = await db.message.findUnique({
+      const existingMessage = await prisma.message.findUnique({
         where: { id },
         include: {
           expediteur: {
@@ -58,7 +58,7 @@ export async function PUT(
         }, { status: 403 });
       }
 
-      const updatedMessage = await db.message.update({
+      const updatedMessage = await prisma.message.update({
         where: { id },
         data: {
           message: newMessage.trim(),
@@ -126,7 +126,7 @@ export async function DELETE(
     }
 
     try {
-      const existingMessage = await db.message.findUnique({
+      const existingMessage = await prisma.message.findUnique({
         where: { id },
         select: { expediteurId: true }
       });
@@ -145,7 +145,7 @@ export async function DELETE(
         }, { status: 403 });
       }
 
-      await db.message.update({
+      await prisma.message.update({
         where: { id },
         data: {
           message: '[Message supprimé]',

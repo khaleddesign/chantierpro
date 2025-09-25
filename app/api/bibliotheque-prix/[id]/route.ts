@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    const prix = await db.bibliothequePrix.findUnique({
+    const prix = await prisma.bibliothequePrix.findUnique({
       where: { id }
     });
 
@@ -30,7 +30,7 @@ export async function PUT(
     const { id } = await params;
     const data = await request.json();
     
-    const prixMisAJour = await db.bibliothequePrix.update({
+    const prixMisAJour = await prisma.bibliothequePrix.update({
       where: { id },
       data: {
         ...data,
@@ -52,7 +52,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     
-    await db.bibliothequePrix.delete({
+    await prisma.bibliothequePrix.delete({
       where: { id }
     });
 
