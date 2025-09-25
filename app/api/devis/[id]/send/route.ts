@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
@@ -9,7 +9,7 @@ export async function POST(
     const { id } = await params;
     const { email, message } = await request.json();
 
-    const devis = await db.devis.findUnique({
+    const devis = await prisma.devis.findUnique({
       where: { id },
       include: {
         client: true,
@@ -25,7 +25,7 @@ export async function POST(
       return NextResponse.json({ error: 'Ce document est déjà payé' }, { status: 400 });
     }
 
-    const updatedDevis = await db.devis.update({
+    const updatedDevis = await prisma.devis.update({
       where: { id },
       data: {
         statut: 'ENVOYE'

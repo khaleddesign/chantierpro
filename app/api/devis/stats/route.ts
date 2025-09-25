@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,13 +10,13 @@ export async function GET(request: NextRequest) {
         devisList,
         facturesList
       ] = await Promise.all([
-        db.devis.count({ where: { type: 'DEVIS' } }),
-        db.devis.count({ where: { type: 'FACTURE' } }),
-        db.devis.findMany({ 
+        prisma.devis.count({ where: { type: 'DEVIS' } }),
+        prisma.devis.count({ where: { type: 'FACTURE' } }),
+        prisma.devis.findMany({ 
           where: { type: 'DEVIS' },
           select: { statut: true, totalTTC: true, dateEcheance: true }
         }),
-        db.devis.findMany({ 
+        prisma.devis.findMany({ 
           where: { type: 'FACTURE' },
           select: { statut: true, totalTTC: true }
         })

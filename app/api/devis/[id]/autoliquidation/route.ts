@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // PUT - Activer/Désactiver l'autoliquidation
 export async function PUT(
@@ -10,7 +10,7 @@ export async function PUT(
     const { id } = await params;
     const { autoliquidation, mentionAutoliq } = await request.json();
 
-    const devis = await db.devis.findUnique({
+    const devis = await prisma.devis.findUnique({
       where: { id }
     });
 
@@ -24,7 +24,7 @@ export async function PUT(
       mention = "TVA non applicable, art. 293 B du CGI - Autoliquidation";
     }
 
-    const devisMisAJour = await db.devis.update({
+    const devisMisAJour = await prisma.devis.update({
       where: { id },
       data: {
         autoliquidation: autoliquidation || false,

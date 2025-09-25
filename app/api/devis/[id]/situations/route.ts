@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // GET - Récupérer toutes les situations d'un devis
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    const situations = await db.devis.findMany({
+    const situations = await prisma.devis.findMany({
       where: {
         OR: [
           { id }, // Situation initiale
@@ -46,7 +46,7 @@ export async function POST(
     const { avancement, lignesModifiees, notes } = await request.json();
 
     // Récupérer le devis parent
-    const devisParent = await db.devis.findUnique({
+    const devisParent = await prisma.devis.findUnique({
       where: { id },
       include: {
         ligneDevis: { orderBy: { ordre: 'asc' } },
@@ -60,7 +60,7 @@ export async function POST(
     }
 
     // Compter les situations existantes
-    const situationsCount = await db.devis.count({
+    const situationsCount = await prisma.devis.count({
       where: {
         OR: [
           { situationParent: id },
@@ -85,7 +85,7 @@ export async function POST(
     const totalTTC = totalHT + totalTVA;
 
     // Créer la situation
-    const nouvelleSituation = await db.devis.create({
+    const nouvelleSituation = await prisma.devis.create({
       data: {
         numero: numeroSituation,
         type: 'DEVIS',

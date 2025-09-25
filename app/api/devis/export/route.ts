@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
 type DevisWithRelations = Prisma.DevisGetPayload<{
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         };
       }
 
-      const devisList = await db.devis.findMany({
+      const devisList = await prisma.devis.findMany({
         where: whereClause,
         include: {
           client: { select: { name: true, email: true, company: true } },

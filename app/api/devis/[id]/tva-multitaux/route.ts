@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 // GET - Récupérer la répartition TVA
 export async function GET(
@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    const devis = await db.devis.findUnique({
+    const devis = await prisma.devis.findUnique({
       where: { id },
       include: {
         ligneDevis: { orderBy: { ordre: 'asc' } },
@@ -81,7 +81,7 @@ export async function PUT(
     const { id } = await params;
     const { lignesDetailTVA, autoliquidation, mentionAutoliq } = await request.json();
 
-    const devis = await db.devis.findUnique({
+    const devis = await prisma.devis.findUnique({
       where: { id },
       include: { ligneDevis: true }
     });
@@ -91,13 +91,13 @@ export async function PUT(
     }
 
     // Supprimer les anciens détails
-    await db.ligneDevisDetail.deleteMany({
+    await prisma.ligneDevisDetail.deleteMany({
       where: { devisId: id }
     });
 
     // Créer les nouveaux détails
     if (lignesDetailTVA && lignesDetailTVA.length > 0) {
-      await db.ligneDevisDetail.createMany({
+      await prisma.ligneDevisDetail.createMany({
         data: lignesDetailTVA.map((detail: any) => ({
           devisId: id,
           ligneId: detail.ligneId,
@@ -125,7 +125,7 @@ export async function PUT(
     const totalTTC = (devis.totalHT || 0) + totalTVA;
 
     // Mettre à jour le devis
-    const devisMisAJour = await db.devis.update({
+    const devisMisAJour = await prisma.devis.update({
       where: { id },
       data: {
         tva55,

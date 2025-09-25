@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(
   request: NextRequest,
@@ -10,7 +10,7 @@ export async function POST(
     const { options } = await request.json().catch(() => ({ options: {} }));
     
     // Récupération du devis à convertir avec ses relations
-    const devis = await db.devis.findUnique({
+    const devis = await prisma.devis.findUnique({
       where: { id },
       include: {
         ligneDevis: { orderBy: { ordre: 'asc' } },
@@ -39,7 +39,7 @@ export async function POST(
     let numeroFacture;
     
     if (devis.situationNumero && devis.situationParent) {
-      const factureCount = await db.devis.count({
+      const factureCount = await prisma.devis.count({
         where: { 
           type: 'FACTURE',
           situationParent: devis.situationParent 
@@ -48,7 +48,7 @@ export async function POST(
       
       numeroFacture = `FAC${devis.numero.split('-')[0].replace('DEV', '')}-S${String(factureCount + 1).padStart(2, '0')}`;
     } else {
-      const factureCount = await db.devis.count({
+      const factureCount = await prisma.devis.count({
         where: { type: 'FACTURE' }
       });
       
@@ -61,7 +61,7 @@ export async function POST(
 
     // Créer la facture
     try {
-      const facture = await db.devis.create({
+      const facture = await prisma.devis.create({
         data: {
           numero: numeroFacture,
           type: 'FACTURE',
@@ -105,7 +105,7 @@ export async function POST(
       });
 
       // Mettre à jour le devis d'origine pour référencer la facture
-      await db.devis.update({
+      await prisma.devis.update({
         where: { id: devis.id },
         data: {
           factureId: facture.id
