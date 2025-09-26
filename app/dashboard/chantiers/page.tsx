@@ -880,7 +880,7 @@ export default function ChantiersPage() {
         {/* Contenu principal */}
         {loading ? (
           <LoadingSkeleton />
-        ) : chantiers.length === 0 ? (
+        ) : (chantiers || []).length === 0 ? (
           <EmptyState />
         ) : (
           <>
