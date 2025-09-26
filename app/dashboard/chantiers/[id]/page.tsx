@@ -553,13 +553,13 @@ export default function ChantierDetailPage() {
                 </h3>
                 <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-100">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-lg font-bold">
-                    {chantier.client.name.charAt(0)}
+                    {chantier?.client?.name?.charAt(0) || '?'}
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">
-                      {chantier.client.name}
+                      {chantier?.client?.name || 'Client inconnu'}
                     </p>
-                    {chantier.client.company && (
+                    {chantier?.client?.company && (
                       <p className="text-gray-500 text-sm">
                         {chantier.client.company}
                       </p>
@@ -572,32 +572,32 @@ export default function ChantierDetailPage() {
                     <label className="text-gray-500 text-sm block mb-1">
                       Email
                     </label>
-                    <a href={`mailto:${chantier.client.email}`} className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
+                    <a href={`mailto:${chantier?.client?.email || ''}`} className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
                       <Mail size={14} />
-                      {chantier.client.email}
+                      {chantier?.client?.email || 'Email non disponible'}
                     </a>
                   </div>
 
-                  {chantier.client.phone && (
+                  {chantier?.client?.phone && (
                     <div>
                       <label className="text-gray-500 text-sm block mb-1">
                         Téléphone
                       </label>
-                      <a href={`tel:${chantier.client.phone}`} className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
+                      <a href={`tel:${chantier?.client?.phone || ''}`} className="text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1">
                         <Phone size={14} />
-                        {chantier.client.phone}
+                        {chantier?.client?.phone || 'Téléphone non disponible'}
                       </a>
                     </div>
                   )}
 
-                  {chantier.client.address && (
+                  {chantier?.client?.address && (
                     <div>
                       <label className="text-gray-500 text-sm block mb-1">
                         Adresse
                       </label>
                       <p className="text-gray-900 flex items-center gap-1">
                         <MapPin size={14} className="text-gray-400" />
-                        {chantier.client.address}
+                        {chantier?.client?.address || 'Adresse non disponible'}
                       </p>
                     </div>
                   )}

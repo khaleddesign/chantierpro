@@ -140,8 +140,15 @@ export function useChantiers() {
       }
 
       const data: ChantiersResponse = await response.json();
-      setChantiers(data.chantiers);
-      setPagination(data.pagination);
+      setChantiers(data?.chantiers || []);
+      setPagination(data?.pagination || {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      });
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur lors du chargement des chantiers';
@@ -218,7 +225,7 @@ export function useChantiers() {
       const newChantier = await response.json();
       
       // Ajouter le nouveau chantier à la liste
-      setChantiers(prev => [newChantier, ...prev]);
+      setChantiers(prev => [newChantier, ...(prev || [])]);
       
       return { success: true, data: newChantier };
 
@@ -265,7 +272,7 @@ export function useChantiers() {
       
       // Mettre à jour dans la liste
       setChantiers(prev => 
-        prev.map(c => c.id === id ? updatedChantier : c)
+        (prev || []).map(c => c.id === id ? updatedChantier : c)
       );
       
       // Mettre à jour le chantier courant si c'est le même
@@ -308,7 +315,7 @@ export function useChantiers() {
       }
 
       // Supprimer de la liste
-      setChantiers(prev => prev.filter(c => c.id !== id));
+      setChantiers(prev => (prev || []).filter(c => c.id !== id));
       
       // Clear le chantier courant si c'est le même
       if (chantier && chantier.id === id) {

@@ -297,11 +297,11 @@ export default function ChantiersPage() {
               
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  {chantier.client.name.charAt(0).toUpperCase()}
+                  {chantier?.client?.name?.charAt(0)?.toUpperCase() || '?'}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{chantier.client.name}</p>
-                  {chantier.client.company && (
+                  <p className="text-sm font-medium text-gray-900">{chantier?.client?.name || 'Client inconnu'}</p>
+                  {chantier?.client?.company && (
                     <p className="text-xs text-gray-500">{chantier.client.company}</p>
                   )}
                 </div>
@@ -397,7 +397,7 @@ export default function ChantiersPage() {
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Users size={14} className="mr-1 text-gray-400" />
-                  <span>{chantier.client.name}</span>
+                  <span>{chantier?.client?.name || 'Client inconnu'}</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Briefcase size={14} className="mr-1 text-gray-400" />
@@ -500,11 +500,11 @@ export default function ChantiersPage() {
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-2">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                      {chantier.client.name.charAt(0).toUpperCase()}
+                      {chantier?.client?.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{chantier.client.name}</p>
-                      {chantier.client.company && (
+                      <p className="text-sm font-medium text-gray-900 truncate">{chantier?.client?.name || 'Client inconnu'}</p>
+                      {chantier?.client?.company && (
                         <p className="text-xs text-gray-500 truncate">{chantier.client.company}</p>
                       )}
                     </div>
@@ -673,18 +673,18 @@ export default function ChantiersPage() {
       <div className="flex items-center justify-between bg-white px-6 py-3 border border-gray-200 rounded-lg">
         <div className="flex items-center">
           <p className="text-sm text-gray-700">
-            Affichage de <span className="font-medium">{((pagination.page - 1) * pagination.limit) + 1}</span> à{' '}
+            Affichage de <span className="font-medium">{((pagination?.page || 1) - 1) * (pagination?.limit || 10) + 1}</span> à{' '}
             <span className="font-medium">
-              {Math.min(pagination.page * pagination.limit, pagination.total)}
+              {Math.min((pagination?.page || 1) * (pagination?.limit || 10), pagination?.total || 0)}
             </span>{' '}
-            sur <span className="font-medium">{pagination.total}</span> résultats
+            sur <span className="font-medium">{pagination?.total || 0}</span> résultats
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handlePageChange(pagination.page - 1)}
+            onClick={() => handlePageChange((pagination?.page || 1) - 1)}
             disabled={!pagination?.hasPrevPage || loading} // ✅ Protection
           >
             Précédent
@@ -710,7 +710,7 @@ export default function ChantiersPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handlePageChange(pagination.page + 1)}
+            onClick={() => handlePageChange((pagination?.page || 1) + 1)}
             disabled={!pagination?.hasNextPage || loading} // ✅ Protection
           >
             Suivant
