@@ -66,6 +66,12 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.company = user.company;
         token.image = user.image;
+
+        console.log('🔑 JWT callback - User authenticated:', {
+          userId: user.id,
+          email: user.email,
+          role: user.role
+        });
       }
       return token;
     },
@@ -80,6 +86,12 @@ export const authOptions: NextAuthOptions = {
           company: token.company as string,
           image: token.image as string,
         };
+
+        console.log('👤 Session callback - Session created:', {
+          userId: session.user.id,
+          email: session.user.email,
+          role: session.user.role
+        });
       }
       return session;
     },
@@ -106,13 +118,22 @@ export const authOptions: NextAuthOptions = {
   
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
-  
-  // ✅ CONFIGURATION SIMPLIFIÉE DES COOKIES
+
+  // ✅ CONFIGURATION COOKIES OPTIMISÉE POUR VERCEL
   useSecureCookies: process.env.NODE_ENV === 'production',
-  
-  // ✅ SUPPRESSION DE LA CONFIG COOKIES COMPLEXE
-  // Les cookies par défaut de NextAuth fonctionnent mieux avec Vercel
-  
+
+  cookies: {
+    sessionToken: {
+      name: `${process.env.NODE_ENV === 'production' ? '__Secure-' : ''}next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // ✅ 30 jours
   },

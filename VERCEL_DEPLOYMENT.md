@@ -42,13 +42,36 @@ DATABASE_URL="postgresql://postgres.xxx:password@aws-1-eu-north-1.pooler.supabas
 
 ## 🔍 Diagnostic des erreurs d'authentification
 
-### Symptômes : 401 sur /api/chantiers
-1. Vérifier NEXTAUTH_URL dans Vercel Dashboard
-2. Vérifier les logs serveur : `userId: undefined` indique un problème de session
-3. Tester la connexion avec les DevTools Network tab
+### Symptômes : 401 sur /api/chantiers + userId: undefined
+**Causes possibles** :
+1. ❌ NEXTAUTH_URL incorrecte ou manquante
+2. ❌ Cookies NextAuth non transmis/invalides
+3. ❌ getServerSession() retourne null
+4. ❌ NEXTAUTH_SECRET manquante ou différente entre builds
+
+**Étapes de diagnostic** :
+1. Vérifier NEXTAUTH_URL dans Vercel Dashboard → Settings → Environment Variables
+2. Vérifier les logs serveur Vercel pour :
+   - `🔑 JWT callback - User authenticated` (connexion réussie)
+   - `👤 Session callback - Session created` (session créée)
+   - `🔐 requireAuth - Session serveur` (session détectée par API)
+3. Vérifier les cookies dans DevTools → Application → Cookies :
+   - `__Secure-next-auth.session-token` (production)
+   - `next-auth.session-token` (développement)
+4. Tester avec `curl` :
+   ```bash
+   curl -v https://chantierpro-38o8.vercel.app/api/chantiers \
+     -H "Cookie: __Secure-next-auth.session-token=YOUR_TOKEN"
+   ```
 
 ### Symptômes : 401 sur /manifest.json
 - ✅ **CORRIGÉ** : middleware.ts ligne 93-95 exclut maintenant /manifest.json, /sw.js et /api/auth
+
+### Symptômes : Session valide côté client mais null côté serveur
+**Solution appliquée** :
+- ✅ Configuration cookies explicite ajoutée dans lib/auth.ts:113-123
+- ✅ Logs de debug ajoutés dans lib/api-helpers.ts:117-125
+- ✅ Logs de debug ajoutés dans callbacks JWT/session lib/auth.ts:70-94
 
 ## 🏗️ Architecture d'authentification
 

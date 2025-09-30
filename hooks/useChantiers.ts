@@ -148,7 +148,7 @@ export function useChantiers() {
         premierChantier: data?.chantiers?.[0] ? {
           id: data.chantiers[0].id,
           nom: data.chantiers[0].nom,
-          clientId: data.chantiers[0].clientId
+          clientId: data.chantiers[0].client.id
         } : null
       });
       

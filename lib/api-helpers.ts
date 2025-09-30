@@ -112,14 +112,35 @@ export async function handleAPIError(error: unknown, request?: NextRequest, user
 // Fonction pour vérifier l'authentification
 export async function requireAuth(allowedRoles?: UserRole[]) {
   const session = await getServerSession(authOptions);
-  
+
+  // Debug: Log de session détaillé
+  console.log('🔐 requireAuth - Session serveur:', {
+    exists: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id,
+    userEmail: session?.user?.email,
+    role: session?.user?.role,
+    sessionKeys: session ? Object.keys(session) : [],
+    userKeys: session?.user ? Object.keys(session.user) : []
+  });
+
   if (!session?.user?.id) {
+    console.error('❌ Authentication failed - No valid session');
     throw new APIError('Authentication requise', 401);
   }
 
   if (allowedRoles && !allowedRoles.includes(session.user.role as UserRole)) {
+    console.error('❌ Authorization failed - Insufficient privileges', {
+      userRole: session.user.role,
+      allowedRoles
+    });
     throw new APIError('Accès refusé - privilèges insuffisants', 403);
   }
+
+  console.log('✅ Authentication successful:', {
+    userId: session.user.id,
+    role: session.user.role
+  });
 
   return session;
 }
