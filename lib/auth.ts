@@ -105,6 +105,21 @@ export const authOptions: NextAuthOptions = {
     }
   },
   
+  // Configuration explicite des cookies pour fiabiliser l'envoi du token en production (Vercel)
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.session-token'
+        : 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax', // plus permissif que 'strict' pour les appels API cross-subtree
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // ✅ 30 jours au lieu de 4 heures
