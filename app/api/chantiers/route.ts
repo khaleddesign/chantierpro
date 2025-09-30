@@ -20,7 +20,7 @@ import { ChantierStatus } from "@prisma/client";
 
 // GET /api/chantiers - Récupérer la liste des chantiers
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT']);
+  const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT'], request);
   
   if (!checkRateLimit(`chantiers:${session.user.id}`, 200, 15 * 60 * 1000)) {
     throw new APIError('Trop de requêtes, veuillez réessayer plus tard', 429);
@@ -156,7 +156,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
 // POST /api/chantiers - Créer un nouveau chantier
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const session = await requireAuth(['ADMIN', 'COMMERCIAL']);
+  const session = await requireAuth(['ADMIN', 'COMMERCIAL'], request);
   
   if (!checkRateLimit(`chantiers:${session.user.id}`, 10, 15 * 60 * 1000)) {
     throw new APIError('Trop de créations, veuillez réessayer plus tard', 429);

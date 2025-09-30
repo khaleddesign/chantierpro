@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import type { APIResponse, UserRole } from '@/types/crm';
+import { cookies } from 'next/headers';
 
 // Classe personnalisée pour les erreurs API
 export class APIError extends Error {
@@ -110,7 +111,22 @@ export async function handleAPIError(error: unknown, request?: NextRequest, user
 }
 
 // Fonction pour vérifier l'authentification
-export async function requireAuth(allowedRoles?: UserRole[]) {
+export async function requireAuth(allowedRoles?: UserRole[], request?: NextRequest) {
+  // Debug: Log des cookies reçus
+  try {
+    const cookieStore = request ? request.cookies : await cookies();
+    const allCookies = cookieStore.getAll();
+    console.log('🍪 Cookies reçus par requireAuth:', {
+      count: allCookies.length,
+      cookies: allCookies.map(c => ({ name: c.name, hasValue: !!c.value, valueLength: c.value?.length || 0 })),
+      hasSessionToken: allCookies.some(c => c.name.includes('next-auth.session-token')),
+      hasSecureSessionToken: allCookies.some(c => c.name.includes('__Secure-next-auth.session-token')),
+      allCookieNames: allCookies.map(c => c.name)
+    });
+  } catch (cookieError) {
+    console.error('❌ Erreur lecture cookies:', cookieError);
+  }
+
   const session = await getServerSession(authOptions);
 
   // Debug: Log de session détaillé
@@ -121,7 +137,10 @@ export async function requireAuth(allowedRoles?: UserRole[]) {
     userEmail: session?.user?.email,
     role: session?.user?.role,
     sessionKeys: session ? Object.keys(session) : [],
-    userKeys: session?.user ? Object.keys(session.user) : []
+    userKeys: session?.user ? Object.keys(session.user) : [],
+    authOptionsSecret: !!authOptions.secret,
+    nodeEnv: process.env.NODE_ENV,
+    nextauthUrl: process.env.NEXTAUTH_URL
   });
 
   if (!session?.user?.id) {
