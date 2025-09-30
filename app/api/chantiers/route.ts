@@ -16,7 +16,6 @@ import { validateAndSanitize } from '@/lib/validations/crm';
 import { ChantiersQuerySchema, ChantierCreateSchema } from '@/lib/validations';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { ChantierStatus } from "@prisma/client";
 
 // GET /api/chantiers - Récupérer la liste des chantiers
 export const GET = withErrorHandling(async (request: NextRequest) => {
@@ -63,15 +62,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   if (session.user.role === "CLIENT") {
     whereClause.clientId = session.user.id;
   } else if (session.user.role === "COMMERCIAL") {
-    // Debug: Vérifier les données avant filtrage
-    console.log('🔍 Filtrage COMMERCIAL:', {
+    // TEMPORAIRE: ne pas filtrer par commercial tant que commercialId n'est pas renseigné pour les clients
+    // Objectif: débloquer l'affichage des chantiers pour les commerciaux
+    console.log('🔍 Filtrage COMMERCIAL TEMPORAIRE (pas de filtre commercialId)', {
       userId: session.user.id,
       role: session.user.role
     });
-    
-    whereClause.client = {
-      commercialId: session.user.id
-    };
+    // whereClause.client = { commercialId: session.user.id };
   }
   
   // Ajouter le filtre clientId si spécifié
@@ -90,7 +87,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
   
   if (status && status !== "TOUS") {
-    whereClause.statut = status as ChantierStatus;
+    whereClause.statut = status as any; // cast souple, enum côté Prisma
   }
   
   // Debug: Log des filtres appliqués
