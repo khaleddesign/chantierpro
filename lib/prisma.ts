@@ -6,7 +6,9 @@ declare global {
 
 // PrismaClient configuration optimized for serverless
 export const prisma = globalThis.__prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: process.env.NODE_ENV === 'development' || process.env.PRISMA_DEBUG === 'true'
+    ? ['query', 'error', 'warn']
+    : ['error', 'warn'],
   datasources: {
     db: {
       url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL,
