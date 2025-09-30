@@ -29,12 +29,12 @@ function DashboardContent() {
     if (!isLoading && user) {
       if (user.role === "CLIENT") {
         setIsRedirecting(true);
-        router.push("/dashboard/client");
+        router.replace("/dashboard/client");
         return;
       }
       if (user.role === "OUVRIER") {
         setIsRedirecting(true);
-        router.push("/dashboard/ouvrier");
+        router.replace("/dashboard/ouvrier");
         return;
       }
     }

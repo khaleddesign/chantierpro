@@ -63,7 +63,7 @@ test.describe('Authentication Flow', () => {
     
     // Fill credentials
     await emailInput.fill('admin@chantierpro.fr');
-    await passwordInput.fill('password123');
+    await passwordInput.fill('admin123');
     
     // Submit form
     await submitButton.click();
@@ -78,8 +78,8 @@ test.describe('Authentication Flow', () => {
     const submitButton = page.getByRole('button', { name: /se connecter/i });
     
     // Fill credentials
-    await emailInput.fill('client@chantierpro.fr');
-    await passwordInput.fill('password123');
+    await emailInput.fill('marie.dubois@email.fr');
+    await passwordInput.fill('client123');
     
     // Submit form
     await submitButton.click();
@@ -133,7 +133,7 @@ test.describe('Authentication Flow', () => {
     
     // Fill credentials
     await emailInput.fill('admin@chantierpro.fr');
-    await passwordInput.fill('password123');
+    await passwordInput.fill('admin123');
     
     // Submit with Enter key
     await passwordInput.press('Enter');
@@ -154,8 +154,8 @@ test.describe('Dashboard Access Control', () => {
   test('should prevent access to admin routes for non-admin users', async ({ page }) => {
     // First login as client
     await page.goto('/auth/signin');
-    await page.getByLabel(/email/i).fill('client@chantierpro.fr');
-    await page.getByLabel(/mot de passe/i).fill('password123');
+    await page.getByLabel(/email/i).fill('marie.dubois@email.fr');
+    await page.getByLabel(/mot de passe/i).fill('client123');
     await page.getByRole('button', { name: /se connecter/i }).click();
     
     // Wait for client dashboard

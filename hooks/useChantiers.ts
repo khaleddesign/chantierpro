@@ -140,6 +140,18 @@ export function useChantiers() {
       }
 
       const data: ChantiersResponse = await response.json();
+      
+      // Debug: Log des données reçues
+      console.log('📥 Données reçues du hook:', {
+        chantiers: data?.chantiers?.length || 0,
+        pagination: data?.pagination,
+        premierChantier: data?.chantiers?.[0] ? {
+          id: data.chantiers[0].id,
+          nom: data.chantiers[0].nom,
+          clientId: data.chantiers[0].clientId
+        } : null
+      });
+      
       setChantiers(data?.chantiers || []);
       setPagination(data?.pagination || {
         page: 1,
@@ -224,8 +236,18 @@ export function useChantiers() {
 
       const newChantier = await response.json();
       
-      // Ajouter le nouveau chantier à la liste
+      // Ajouter le nouveau chantier à la liste (en première position)
       setChantiers(prev => [newChantier, ...(prev || [])]);
+      
+      // Mettre à jour la pagination
+      setPagination(prev => ({
+        ...prev,
+        total: prev.total + 1,
+        totalPages: Math.ceil((prev.total + 1) / prev.limit),
+        page: 1 // Retourner à la page 1 pour voir le nouveau chantier
+      }));
+      
+      console.log('✅ Chantier créé et ajouté à la liste:', newChantier.nom);
       
       return { success: true, data: newChantier };
 

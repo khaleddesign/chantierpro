@@ -123,7 +123,10 @@ export default function NouveauChantierPage() {
       const result = await createChantier(submitData);
       if (result.success && result.data) {
         success('Succès', 'Le chantier a été créé avec succès');
-        router.push(`/dashboard/chantiers/${result.data.id}`);
+        // Redirection vers la liste avec refresh des données
+        router.push('/dashboard/chantiers');
+        // Forcer le rechargement de la page pour s'assurer que les données sont à jour
+        window.location.reload();
       } else {
         showError('Erreur', result.error || 'Une erreur est survenue');
       }

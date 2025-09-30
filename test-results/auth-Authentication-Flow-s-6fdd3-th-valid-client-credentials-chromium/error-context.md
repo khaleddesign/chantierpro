@@ -1,0 +1,43 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - heading "Espace Client" [level=1] [ref=e12]
+      - navigation [ref=e13]:
+        - link "Mon espace" [ref=e14] [cursor=pointer]:
+          - /url: /dashboard/client
+          - img [ref=e15] [cursor=pointer]
+          - text: Mon espace
+        - link "Mes devis" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard/devis
+          - img [ref=e19] [cursor=pointer]
+          - text: Mes devis
+        - link "Planning" [ref=e22] [cursor=pointer]:
+          - /url: /dashboard/planning
+          - img [ref=e23] [cursor=pointer]
+          - text: Planning
+        - link "Messages" [ref=e25] [cursor=pointer]:
+          - /url: /dashboard/messages
+          - img [ref=e26] [cursor=pointer]
+          - text: Messages
+        - link "Documents" [ref=e28] [cursor=pointer]:
+          - /url: /dashboard/documents
+          - img [ref=e29] [cursor=pointer]
+          - text: Documents
+        - link "Mon profil" [ref=e31] [cursor=pointer]:
+          - /url: /dashboard/profile
+          - img [ref=e32] [cursor=pointer]
+          - text: Mon profil
+    - generic [ref=e36]:
+      - img [ref=e39]
+      - generic [ref=e42]:
+        - paragraph [ref=e43]: Marie Dubois
+        - paragraph [ref=e44]: Utilisateur
+      - button "Se déconnecter" [ref=e45] [cursor=pointer]:
+        - img [ref=e46] [cursor=pointer]
+  - main [ref=e50]
+```

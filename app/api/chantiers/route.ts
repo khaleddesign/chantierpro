@@ -63,9 +63,20 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   if (session.user.role === "CLIENT") {
     whereClause.clientId = session.user.id;
   } else if (session.user.role === "COMMERCIAL") {
+    // Debug: Vérifier les données avant filtrage
+    console.log('🔍 Filtrage COMMERCIAL:', {
+      userId: session.user.id,
+      role: session.user.role
+    });
+    
     whereClause.client = {
       commercialId: session.user.id
     };
+  }
+  
+  // Ajouter le filtre clientId si spécifié
+  if (clientId) {
+    whereClause.clientId = clientId;
   }
   
   // Filtres de recherche
@@ -81,6 +92,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   if (status && status !== "TOUS") {
     whereClause.statut = status as ChantierStatus;
   }
+  
+  // Debug: Log des filtres appliqués
+  console.log('🔍 Filtres appliqués:', {
+    role: session.user.role,
+    userId: session.user.id,
+    whereClause: JSON.stringify(whereClause, null, 2)
+  });
 
   const [chantiers, total] = await Promise.all([
     prisma.chantier.findMany({
@@ -96,6 +114,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
             email: true,
             company: true,
             phone: true,
+            commercialId: true, // Ajouter commercialId pour debug
           }
         },
         _count: {
@@ -110,6 +129,18 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     }),
     prisma.chantier.count({ where: whereClause })
   ]);
+
+  // Debug: Log des résultats
+  console.log('📊 Résultats API:', {
+    chantiersTrouves: chantiers.length,
+    total: total,
+    premierChantier: chantiers[0] ? {
+      id: chantiers[0].id,
+      nom: chantiers[0].nom,
+      clientId: chantiers[0].clientId,
+      clientCommercialId: chantiers[0].client?.commercialId
+    } : null
+  });
 
   await logUserAction(
     session.user.id, 

@@ -82,6 +82,14 @@ export const authOptions: NextAuthOptions = {
         };
       }
       return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // Si l'URL contient un callbackUrl, l'utiliser
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Sinon, rediriger vers le dashboard par défaut
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     }
   },
   

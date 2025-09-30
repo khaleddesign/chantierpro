@@ -1,0 +1,73 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img [ref=e8]
+        - heading "ChantierPro" [level=1] [ref=e12]
+      - navigation [ref=e13]:
+        - link "Tableau de bord" [ref=e14] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e15] [cursor=pointer]
+          - text: Tableau de bord
+        - link "Chantiers" [ref=e18] [cursor=pointer]:
+          - /url: /dashboard/chantiers
+          - img [ref=e19] [cursor=pointer]
+          - text: Chantiers
+        - link "Projets" [ref=e23] [cursor=pointer]:
+          - /url: /dashboard/projets
+          - img [ref=e24] [cursor=pointer]
+          - text: Projets
+        - link "Devis" [ref=e26] [cursor=pointer]:
+          - /url: /dashboard/devis
+          - img [ref=e27] [cursor=pointer]
+          - text: Devis
+        - link "Factures" [ref=e30] [cursor=pointer]:
+          - /url: /dashboard/factures
+          - img [ref=e31] [cursor=pointer]
+          - text: Factures
+        - link "Planning" [ref=e33] [cursor=pointer]:
+          - /url: /dashboard/planning
+          - img [ref=e34] [cursor=pointer]
+          - text: Planning
+        - link "Messages" [ref=e36] [cursor=pointer]:
+          - /url: /dashboard/messages
+          - img [ref=e37] [cursor=pointer]
+          - text: Messages
+        - link "Documents" [ref=e39] [cursor=pointer]:
+          - /url: /dashboard/documents
+          - img [ref=e40] [cursor=pointer]
+          - text: Documents
+        - link "CRM" [ref=e42] [cursor=pointer]:
+          - /url: /dashboard/crm
+          - img [ref=e43] [cursor=pointer]
+          - text: CRM
+        - link "Utilisateurs" [ref=e47] [cursor=pointer]:
+          - /url: /dashboard/users
+          - img [ref=e48] [cursor=pointer]
+          - text: Utilisateurs
+        - link "Rapports" [ref=e53] [cursor=pointer]:
+          - /url: /dashboard/reports
+          - img [ref=e54] [cursor=pointer]
+          - text: Rapports
+        - generic [ref=e56]:
+          - heading "Administration" [level=3] [ref=e57]
+          - link "Administration" [ref=e58] [cursor=pointer]:
+            - /url: /dashboard/admin
+            - img [ref=e59] [cursor=pointer]
+            - text: Administration
+          - link "Bibliothèque Prix" [ref=e62] [cursor=pointer]:
+            - /url: /dashboard/admin/bibliotheque
+            - img [ref=e63] [cursor=pointer]
+            - text: Bibliothèque Prix
+    - generic [ref=e66]:
+      - img [ref=e69]
+      - generic [ref=e72]:
+        - paragraph [ref=e73]: Admin ChantierPro
+        - paragraph [ref=e74]: Administrateur
+      - button "Se déconnecter" [ref=e75] [cursor=pointer]:
+        - img [ref=e76] [cursor=pointer]
+  - main [ref=e80]
+```

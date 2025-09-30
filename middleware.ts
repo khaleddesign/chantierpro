@@ -90,6 +90,12 @@ export default withAuth(
         const isAuthPage = req.nextUrl.pathname.startsWith("/auth");
         const isDashboard = req.nextUrl.pathname.startsWith("/dashboard");
         const isHomePage = req.nextUrl.pathname === "/";
+        const isPublicAsset = req.nextUrl.pathname === "/manifest.json" ||
+                              req.nextUrl.pathname === "/sw.js" ||
+                              req.nextUrl.pathname.startsWith("/api/auth");
+
+        // Assets publics et pages NextAuth accessibles sans authentification
+        if (isPublicAsset) return true;
 
         // Pages d'auth sont accessibles à tous
         if (isAuthPage) return true;

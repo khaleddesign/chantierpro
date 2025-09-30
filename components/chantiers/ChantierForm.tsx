@@ -164,8 +164,12 @@ export function ChantierForm({ chantier, onClose, onSuccess }: ChantierFormProps
         await updateChantier(chantier.id, submitData);
         success('Succès', 'Le chantier a été mis à jour avec succès');
       } else {
-        await createChantier(submitData);
-        success('Succès', 'Le chantier a été créé avec succès');
+        const result = await createChantier(submitData);
+        if (result.success) {
+          success('Succès', 'Le chantier a été créé avec succès');
+        } else {
+          throw new Error(result.error || 'Erreur lors de la création');
+        }
       }
       
       onSuccess?.();

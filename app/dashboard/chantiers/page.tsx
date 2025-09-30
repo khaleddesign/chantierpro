@@ -95,6 +95,13 @@ export default function ChantiersPage() {
       // Éviter les appels multiples
       if (loading) return;
       
+      console.log('🔄 Chargement chantiers:', {
+        page: 1,
+        limit: pagination?.limit || 10,
+        search: search || undefined,
+        status: statusFilter === 'TOUS' ? undefined : statusFilter,
+      });
+      
       fetchChantiers({
         page: 1, // Reset à la page 1 lors d'une nouvelle recherche
         limit: pagination?.limit || 10, // ✅ Protection contre undefined
@@ -212,9 +219,10 @@ export default function ChantiersPage() {
 
   const handleFormSuccess = async () => {
     try {
+      // Recharger la liste depuis la page 1 pour voir le nouveau chantier
       await fetchChantiers({
-        page: pagination?.page || 1, // ✅ Protection ajoutée
-        limit: pagination?.limit || 10, // ✅ Protection ajoutée
+        page: 1, // Toujours revenir à la page 1 après création
+        limit: pagination?.limit || 10,
         search: search || undefined,
         status: statusFilter === 'TOUS' ? undefined : statusFilter,
       });
