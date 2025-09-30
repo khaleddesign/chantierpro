@@ -139,20 +139,21 @@ export function useChantiers() {
         throw new Error(errorData.error || 'Erreur lors du chargement des chantiers');
       }
 
-      const data: ChantiersResponse = await response.json();
-      
+      const raw = await response.json();
+      const data = raw?.data;
+
       // Debug: Log des données reçues
       console.log('📥 Données reçues du hook:', {
-        chantiers: data?.chantiers?.length || 0,
+        chantiers: data?.data?.length || 0,
         pagination: data?.pagination,
-        premierChantier: data?.chantiers?.[0] ? {
-          id: data.chantiers[0].id,
-          nom: data.chantiers[0].nom,
-          clientId: data.chantiers[0].client.id
+        premierChantier: data?.data?.[0] ? {
+          id: data.data[0].id,
+          nom: data.data[0].nom,
+          clientId: data.data[0].client.id
         } : null
       });
       
-      setChantiers(data?.chantiers || []);
+      setChantiers(data?.data || []);
       setPagination(data?.pagination || {
         page: 1,
         limit: 10,
