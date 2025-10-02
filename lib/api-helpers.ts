@@ -174,11 +174,25 @@ export function withErrorHandling<T extends unknown[]>(
     } catch (error) {
       const request = args[0] as NextRequest;
 
+      // 🔴 LOG DÉTAILLÉ DE L'ERREUR CAPTURÉE
+      console.error('❌❌❌ ERREUR CAPTURÉE PAR withErrorHandling ❌❌❌');
+      console.error('Type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('Message:', error instanceof Error ? error.message : String(error));
+      console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
+      console.error('URL:', request?.url);
+      console.error('Method:', request?.method);
+
+      if (error instanceof APIError) {
+        console.error('APIError statusCode:', error.statusCode);
+        console.error('APIError code:', error.code);
+      }
+
       // Tenter de récupérer l'userId de la session pour le logging
       let userId: string | undefined;
       try {
         const session = await getServerSession(authOptions);
         userId = session?.user?.id;
+        console.error('UserId pour logging:', userId);
       } catch (sessionError) {
         // Session non disponible, userId restera undefined
         console.warn('⚠️ Impossible de récupérer la session pour le logging d\'erreur');

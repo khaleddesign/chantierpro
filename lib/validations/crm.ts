@@ -130,19 +130,24 @@ export type InteractionCreate = z.infer<typeof InteractionCreateSchema>;
 export type OpportuniteCreate = z.infer<typeof OpportuniteCreateSchema>;
 
 // Fonction utilitaire pour valider et nettoyer les données
-export function validateAndSanitize<T>(schema: z.ZodSchema<T>, data: unknown): { 
-  success: boolean; 
-  data?: T; 
-  errors?: string[] 
+export function validateAndSanitize<T>(schema: z.ZodSchema<T>, data: unknown): {
+  success: boolean;
+  data?: T;
+  errors?: string[]
 } {
   try {
+    console.log('🔍 validateAndSanitize - Données entrantes:', JSON.stringify(data, null, 2));
     const validatedData = schema.parse(data);
+    console.log('✅ validateAndSanitize - Validation réussie');
     return { success: true, data: validatedData };
   } catch (error) {
+    console.error('❌ validateAndSanitize - Erreur de validation');
     if (error instanceof z.ZodError) {
       const errors = error.issues.map((err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`);
+      console.error('Erreurs Zod:', errors);
       return { success: false, errors };
     }
+    console.error('Erreur non-Zod:', error);
     return { success: false, errors: ['Erreur de validation inconnue'] };
   }
 }
