@@ -156,7 +156,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // POST /api/chantiers - Créer un nouveau chantier
-// VERSION: 2025-10-02-v5
+// VERSION: 2025-10-02-v6 - FORCE REBUILD WITH NEW VALIDATION SCHEMA
 export const POST = withErrorHandling(async (request: NextRequest) => {
   console.error('🚀🚀🚀 POST /api/chantiers HANDLER STARTED - VERSION 2025-10-02-v5 🚀🚀🚀');
 
