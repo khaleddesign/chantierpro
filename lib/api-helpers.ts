@@ -173,7 +173,18 @@ export function withErrorHandling<T extends unknown[]>(
       return await handler(...args);
     } catch (error) {
       const request = args[0] as NextRequest;
-      return handleAPIError(error, request);
+
+      // Tenter de récupérer l'userId de la session pour le logging
+      let userId: string | undefined;
+      try {
+        const session = await getServerSession(authOptions);
+        userId = session?.user?.id;
+      } catch (sessionError) {
+        // Session non disponible, userId restera undefined
+        console.warn('⚠️ Impossible de récupérer la session pour le logging d\'erreur');
+      }
+
+      return handleAPIError(error, request, userId);
     }
   };
 }

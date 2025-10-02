@@ -19,14 +19,19 @@ import { prisma } from '@/lib/prisma';
 
 // GET /api/chantiers - Récupérer la liste des chantiers
 export const GET = withErrorHandling(async (request: NextRequest) => {
+  console.log('🚀 GET /api/chantiers - Début de la requête');
+
   const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT'], request);
-  
+  console.log('✅ Authentication successful - userId:', session.user.id);
+
   if (!checkRateLimit(`chantiers:${session.user.id}`, 200, 15 * 60 * 1000)) {
     throw new APIError('Trop de requêtes, veuillez réessayer plus tard', 429);
   }
+  console.log('✅ Rate limit OK');
 
   const { searchParams } = new URL(request.url);
-  
+  console.log('📋 SearchParams extraits');
+
   const paramsValidation = validateAndSanitize(ChantiersQuerySchema, {
     page: searchParams.get('page') || '1',
     limit: searchParams.get('limit') || '20',
@@ -37,8 +42,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   });
 
   if (!paramsValidation.success) {
+    console.error('❌ Validation des paramètres échouée:', paramsValidation.errors);
     throw new APIError(`Paramètres invalides: ${paramsValidation.errors?.join(', ')}`, 400);
   }
+  console.log('✅ Paramètres validés');
 
   const { page, limit, search, status, clientId, includeDeleted } = paramsValidation.data as {
     page: number;
@@ -97,6 +104,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     whereClause: JSON.stringify(whereClause, null, 2)
   });
 
+  console.log('🔄 Lancement des requêtes Prisma...');
   const [chantiers, total] = await Promise.all([
     prisma.chantier.findMany({
       where: whereClause,
@@ -126,6 +134,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     }),
     prisma.chantier.count({ where: whereClause })
   ]);
+  console.log('✅ Requêtes Prisma terminées');
 
   // Debug: Log des résultats
   console.log('📊 Résultats API:', {
@@ -139,16 +148,22 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     } : null
   });
 
+  console.log('📝 Logging user action...');
   await logUserAction(
-    session.user.id, 
-    'GET_CHANTIERS', 
-    'chantiers', 
-    undefined, 
+    session.user.id,
+    'GET_CHANTIERS',
+    'chantiers',
+    undefined,
     { search, status, clientId, page, limit, total: chantiers.length },
     request
   );
+  console.log('✅ User action loggée');
 
-  return createPaginatedResponse(chantiers, total, page, limit, 'Chantiers récupérés avec succès');
+  console.log('📤 Création de la réponse paginée...');
+  const response = createPaginatedResponse(chantiers, total, page, limit, 'Chantiers récupérés avec succès');
+  console.log('✅ Réponse créée avec succès');
+
+  return response;
 });
 
 // POST /api/chantiers - Créer un nouveau chantier
