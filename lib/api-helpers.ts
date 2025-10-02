@@ -170,8 +170,13 @@ export function withErrorHandling<T extends unknown[]>(
 ) {
   return async (...args: T): Promise<NextResponse> => {
     try {
-      return await handler(...args);
+      const result = await handler(...args);
+      console.log('✅ Handler exécuté avec succès');
+      return result;
     } catch (error) {
+      // LOG IMMÉDIAT avant toute autre opération
+      console.error('🔴🔴🔴 EXCEPTION DANS HANDLER 🔴🔴🔴');
+
       const request = args[0] as NextRequest;
 
       // 🔴 LOG DÉTAILLÉ DE L'ERREUR CAPTURÉE
