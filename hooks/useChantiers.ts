@@ -66,14 +66,14 @@ export interface ChantierFormData {
 }
 
 export interface ChantiersResponse {
-  chantiers: Chantier[];
+  data: Chantier[];
   pagination: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 
@@ -140,27 +140,30 @@ export function useChantiers() {
       }
 
       const raw = await response.json();
-      const data = raw?.data;
+
+      // Structure API : { success: true, data: { data: [...], pagination: {...} } }
+      const apiData: ChantiersResponse = raw?.data;
 
       // Debug: Log des données reçues
       console.log('📥 Données reçues du hook:', {
-        chantiers: data?.data?.length || 0,
-        pagination: data?.pagination,
-        premierChantier: data?.data?.[0] ? {
-          id: data.data[0].id,
-          nom: data.data[0].nom,
-          clientId: data.data[0].client.id
+        success: raw?.success,
+        chantiers: apiData?.data?.length || 0,
+        pagination: apiData?.pagination,
+        premierChantier: apiData?.data?.[0] ? {
+          id: apiData.data[0].id,
+          nom: apiData.data[0].nom,
+          clientId: apiData.data[0].client.id
         } : null
       });
-      
-      setChantiers(data?.data || []);
-      setPagination(data?.pagination || {
-        page: 1,
-        limit: 10,
-        total: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
+
+      setChantiers(apiData?.data || []);
+      setPagination({
+        page: apiData?.pagination?.page || 1,
+        limit: apiData?.pagination?.limit || 10,
+        total: apiData?.pagination?.total || 0,
+        totalPages: apiData?.pagination?.totalPages || 0,
+        hasNextPage: apiData?.pagination?.hasNext || false,
+        hasPrevPage: apiData?.pagination?.hasPrev || false,
       });
 
     } catch (err) {
