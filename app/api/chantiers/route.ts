@@ -18,8 +18,13 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/chantiers - Récupérer la liste des chantiers
+// VERSION: 2025-10-02-v5
 export const GET = withErrorHandling(async (request: NextRequest) => {
+  // Log immédiat pour vérifier que le handler s'exécute
+  console.error('🚀🚀🚀 GET /api/chantiers HANDLER STARTED - VERSION 2025-10-02-v5 🚀🚀🚀');
+
   const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT'], request);
+  console.error('✅ Session obtenue après requireAuth');
 
   if (!checkRateLimit(`chantiers:${session.user.id}`, 200, 15 * 60 * 1000)) {
     throw new APIError('Trop de requêtes, veuillez réessayer plus tard', 429);
@@ -151,19 +156,29 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // POST /api/chantiers - Créer un nouveau chantier
+// VERSION: 2025-10-02-v5
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  console.error('🚀🚀🚀 POST /api/chantiers HANDLER STARTED - VERSION 2025-10-02-v5 🚀🚀🚀');
+
   const session = await requireAuth(['ADMIN', 'COMMERCIAL'], request);
+  console.error('✅ POST - Session obtenue après requireAuth');
   
   if (!checkRateLimit(`chantiers:${session.user.id}`, 10, 15 * 60 * 1000)) {
     throw new APIError('Trop de créations, veuillez réessayer plus tard', 429);
   }
 
   const body = await request.json();
-  
+  console.error('📦 POST - Body reçu:', JSON.stringify(body));
+
   const validation = validateAndSanitize(ChantierCreateSchema, body);
+  console.error('🔍 POST - Validation result:', { success: validation.success, errors: validation.errors });
+
   if (!validation.success) {
+    console.error('❌ POST - Validation échouée, throwing APIError');
     throw new APIError(`Données invalides: ${validation.errors?.join(', ')}`, 400);
   }
+
+  console.error('✅ POST - Validation réussie');
 
   const chantierData = validation.data as {
     nom: string;
