@@ -21,13 +21,30 @@ export const ChantierCreateSchema = z.object({
     .cuid("ID client invalide"),
   
   dateDebut: z.string()
-    .datetime("Date de début invalide")
-    .refine((date) => new Date(date) >= new Date(), {
+    .min(1, "La date de début est requise")
+    .refine((date) => {
+      const parsed = new Date(date);
+      return !isNaN(parsed.getTime());
+    }, {
+      message: "Format de date invalide"
+    })
+    .refine((date) => {
+      const parsed = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return parsed >= today;
+    }, {
       message: "La date de début ne peut pas être dans le passé"
     }),
-  
+
   dateFin: z.string()
-    .datetime("Date de fin invalide"),
+    .min(1, "La date de fin est requise")
+    .refine((date) => {
+      const parsed = new Date(date);
+      return !isNaN(parsed.getTime());
+    }, {
+      message: "Format de date invalide"
+    }),
   
   budget: z.number()
     .positive("Le budget doit être positif")

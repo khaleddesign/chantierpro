@@ -19,18 +19,13 @@ import { prisma } from '@/lib/prisma';
 
 // GET /api/chantiers - Récupérer la liste des chantiers
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  console.error('🚀 GET /api/chantiers - Début de la requête');
-
   const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT'], request);
-  console.error('✅ Authentication successful - userId:', session.user.id);
 
   if (!checkRateLimit(`chantiers:${session.user.id}`, 200, 15 * 60 * 1000)) {
     throw new APIError('Trop de requêtes, veuillez réessayer plus tard', 429);
   }
-  console.error('✅ Rate limit OK');
 
   const { searchParams } = new URL(request.url);
-  console.error('📋 SearchParams extraits');
 
   const paramsValidation = validateAndSanitize(ChantiersQuerySchema, {
     page: searchParams.get('page') || '1',
@@ -42,10 +37,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   });
 
   if (!paramsValidation.success) {
-    console.error('❌ Validation des paramètres échouée:', paramsValidation.errors);
     throw new APIError(`Paramètres invalides: ${paramsValidation.errors?.join(', ')}`, 400);
   }
-  console.error('✅ Paramètres validés');
 
   const { page, limit, search, status, clientId, includeDeleted } = paramsValidation.data as {
     page: number;
@@ -98,13 +91,11 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
   
   // Debug: Log des filtres appliqués
-  console.error('🔍 Filtres appliqués:', {
+  console.log('🔍 Filtres appliqués:', {
     role: session.user.role,
     userId: session.user.id,
     whereClause: JSON.stringify(whereClause, null, 2)
   });
-
-  console.error('🔄 Lancement des requêtes Prisma...');
   const [chantiers, total] = await Promise.all([
     prisma.chantier.findMany({
       where: whereClause,
@@ -134,10 +125,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     }),
     prisma.chantier.count({ where: whereClause })
   ]);
-  console.error('✅ Requêtes Prisma terminées');
 
   // Debug: Log des résultats
-  console.error('📊 Résultats API:', {
+  console.log('📊 Résultats API:', {
     chantiersTrouves: chantiers.length,
     total: total,
     premierChantier: chantiers[0] ? {
@@ -148,7 +138,6 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     } : null
   });
 
-  console.error('📝 Logging user action...');
   await logUserAction(
     session.user.id,
     'GET_CHANTIERS',
@@ -157,13 +146,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     { search, status, clientId, page, limit, total: chantiers.length },
     request
   );
-  console.error('✅ User action loggée');
 
-  console.error('📤 Création de la réponse paginée...');
-  const response = createPaginatedResponse(chantiers, total, page, limit, 'Chantiers récupérés avec succès');
-  console.error('✅ Réponse créée avec succès');
-
-  return response;
+  return createPaginatedResponse(chantiers, total, page, limit, 'Chantiers récupérés avec succès');
 });
 
 // POST /api/chantiers - Créer un nouveau chantier
