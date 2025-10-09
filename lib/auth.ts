@@ -67,11 +67,9 @@ export const authOptions: NextAuthOptions = {
         token.company = user.company;
         token.image = user.image;
 
-        console.log('🔑 JWT callback - User authenticated:', {
-          userId: user.id,
-          email: user.email,
-          role: user.role
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔑 JWT:', user.id);
+        }
       }
       return token;
     },
@@ -87,11 +85,9 @@ export const authOptions: NextAuthOptions = {
           image: token.image as string,
         };
 
-        console.log('👤 Session callback - Session created:', {
-          userId: session.user.id,
-          email: session.user.email,
-          role: session.user.role
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('👤 Session:', session.user.id);
+        }
       }
       return session;
     },

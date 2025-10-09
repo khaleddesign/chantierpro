@@ -95,12 +95,10 @@ export default function ChantiersPage() {
       // Éviter les appels multiples
       if (loading) return;
       
-      console.log('🔄 Chargement chantiers:', {
-        page: 1,
-        limit: pagination?.limit || 10,
-        search: search || undefined,
-        status: statusFilter === 'TOUS' ? undefined : statusFilter,
-      });
+      // Log uniquement en dev
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Chargement chantiers');
+      }
       
       fetchChantiers({
         page: 1, // Reset à la page 1 lors d'une nouvelle recherche

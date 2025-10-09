@@ -144,17 +144,10 @@ export function useChantiers() {
       // Structure API : { success: true, data: { data: [...], pagination: {...} } }
       const apiData: ChantiersResponse = raw?.data;
 
-      // Debug: Log des données reçues
-      console.log('📥 Données reçues du hook:', {
-        success: raw?.success,
-        chantiers: apiData?.data?.length || 0,
-        pagination: apiData?.pagination,
-        premierChantier: apiData?.data?.[0] ? {
-          id: apiData.data[0].id,
-          nom: apiData.data[0].nom,
-          clientId: apiData.data[0].client.id
-        } : null
-      });
+      // Debug en développement uniquement
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📥 Données reçues:', apiData?.data?.length || 0, 'chantiers');
+      }
 
       setChantiers(apiData?.data || []);
       setPagination({

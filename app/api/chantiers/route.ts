@@ -18,13 +18,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/chantiers - Récupérer la liste des chantiers
-// VERSION: 2025-10-02-v5
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  // Log immédiat pour vérifier que le handler s'exécute
-  console.error('🚀🚀🚀 GET /api/chantiers HANDLER STARTED - VERSION 2025-10-02-v5 🚀🚀🚀');
-
   const session = await requireAuth(['ADMIN', 'COMMERCIAL', 'CLIENT'], request);
-  console.error('✅ Session obtenue après requireAuth');
 
   if (!checkRateLimit(`chantiers:${session.user.id}`, 200, 15 * 60 * 1000)) {
     throw new APIError('Trop de requêtes, veuillez réessayer plus tard', 429);
@@ -95,12 +90,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     whereClause.statut = status as any; // cast souple, enum côté Prisma
   }
   
-  // Debug: Log des filtres appliqués
-  console.log('🔍 Filtres appliqués:', {
-    role: session.user.role,
-    userId: session.user.id,
-    whereClause: JSON.stringify(whereClause, null, 2)
-  });
+  // Debug en développement uniquement
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Filtres:', { role: session.user.role, userId: session.user.id });
+  }
   const [chantiers, total] = await Promise.all([
     prisma.chantier.findMany({
       where: whereClause,
@@ -131,17 +124,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
     prisma.chantier.count({ where: whereClause })
   ]);
 
-  // Debug: Log des résultats
-  console.log('📊 Résultats API:', {
-    chantiersTrouves: chantiers.length,
-    total: total,
-    premierChantier: chantiers[0] ? {
-      id: chantiers[0].id,
-      nom: chantiers[0].nom,
-      clientId: chantiers[0].clientId,
-      clientCommercialId: chantiers[0].client?.commercialId
-    } : null
-  });
+  // Debug en développement uniquement
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📊 Résultats:', chantiers.length, '/', total);
+  }
 
   await logUserAction(
     session.user.id,
@@ -156,29 +142,20 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 });
 
 // POST /api/chantiers - Créer un nouveau chantier
-// VERSION: 2025-10-02-v6 - FORCE REBUILD WITH NEW VALIDATION SCHEMA
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  console.error('🚀🚀🚀 POST /api/chantiers HANDLER STARTED - VERSION 2025-10-02-v5 🚀🚀🚀');
-
   const session = await requireAuth(['ADMIN', 'COMMERCIAL'], request);
-  console.error('✅ POST - Session obtenue après requireAuth');
-  
+
   if (!checkRateLimit(`chantiers:${session.user.id}`, 10, 15 * 60 * 1000)) {
     throw new APIError('Trop de créations, veuillez réessayer plus tard', 429);
   }
 
   const body = await request.json();
-  console.error('📦 POST - Body reçu:', JSON.stringify(body));
 
   const validation = validateAndSanitize(ChantierCreateSchema, body);
-  console.error('🔍 POST - Validation result:', { success: validation.success, errors: validation.errors });
 
   if (!validation.success) {
-    console.error('❌ POST - Validation échouée, throwing APIError');
     throw new APIError(`Données invalides: ${validation.errors?.join(', ')}`, 400);
   }
-
-  console.error('✅ POST - Validation réussie');
 
   const chantierData = validation.data as {
     nom: string;
